@@ -35,7 +35,7 @@ def seg_norm_text(data):
   return data_list
 
 
-def create_review_shingle(review, n=4):
+def create_review_shingle(review, n=3):
   """ 
   Create and return sets of ngram words from the given field of a review
   """
