@@ -16,6 +16,8 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 DEFAULT_FT_LOCATION = 'Features'
+TRAINING_PART = 0.95
+VALIDATION_PART = 1 - TRAINING_PART
 
 
 def seg_norm_text(data):
@@ -33,7 +35,7 @@ def seg_norm_text(data):
   return data_list
 
 
-def create_review_shingle(review, n=2):
+def create_review_shingle(review, n=4):
   """ 
   Create and return sets of ngram words from the given field of a review
   """
@@ -43,7 +45,8 @@ def create_review_shingle(review, n=2):
 
   for r in r_list:
     if len(r) >= n:
-        shingles.extend([tuple(r[i:i+n]) for i in xrange(len(r)-n)])
+        for j in range(n):
+          shingles.extend([tuple(r[i:i+n-j]) for i in xrange(len(r)-n)])
 
   return shingles
   
@@ -52,7 +55,7 @@ def create_data_dict(dataset):
   """
   Get a dict of features from the given set
   """
-  # To dict
+
   print " -- Convert dataset content to ngram dictionnary -- "
   ft_dic = []
   for i, review in enumerate(dataset):
@@ -61,71 +64,65 @@ def create_data_dict(dataset):
     d = dict()
     ngrams_list = list(set(create_review_shingle(review)))
     for ngram in ngrams_list:
-      d[' '.join(ngram)] = 1
+      ngram_word = ' '.join(ngram)
+      d[ngram_word] = 1
     ft_dic.append(d)
 
   return ft_dic
 
 
-def add_extra_ft(dataset, data_list):
+def add_extra_ft(dataset, ft_dic):
   """
   Add author and hotel id of review to ngram dictionnary
   TODO: homogeneize author, chotel and ngrams content before to mix them!!
   """
 
   print " -- Add author and hotel in features (to update) -- "
-  for i, d in enumerate(data_list):
+  for i, d in enumerate(ft_dic):
     hotel = "HOTEL " + str(dataset[i].hotel.id)
     auth = "AUTH " + str(dataset[i].author)
     d[hotel] = 1
     d[auth] = 1
 
-  return data_list
+  return ft_dic
 
-def save_ft(features, location=DEFAULT_FT_LOCATION):
+
+def save_ft(ft, model, location=DEFAULT_FT_LOCATION):
   """
   Save the features
   """
 
-  filename = os.path.join(location, "features_" + \
-    utils.timestamp() + ".pkl")
-  utils.dump_pickle(features, filename)
+  ts = utils.timestamp()
+  filename = os.path.join(location, "ft_" + \
+    ts + ".pkl")
+  utils.dump_pickle(ft, filename)
+
+  filename = os.path.join(location, "ft_model_" + \
+    ts + ".pkl")
+  utils.dump_pickle(model, filename)
 
   return filename
 
 
-def save_pp_model(model, path):
-  """
-  Save the feature extraction model
-  """
-  utils.dump_pickle(model, path)
-
-
 def create_ft(data):
   """
-  Extract features in two steps:
-   - Creation of a vect dict
-   - PCA to reduce dimensionality (deprecated)
+  Extract features and create a vectorized dictionnary
   """
 
   print "\n -- CREATE FEATURES MATRIX --"
 
   # Create content data dictionnary
-  data_list_dict = create_data_dict(data)
+  ft_dic = create_data_dict(data)
 
   # Add special entries for author and hotel id
-  data_list_dict = add_extra_ft(data, data_list_dict)
-  
+  ft_dic = add_extra_ft(data, ft_dic)
+
   # Create and execute a processing pipe for review content
   vec = DictVectorizer()
-  pipe = Pipeline([('vectorizer', vec)])
-  ft = pipe.fit_transform(data_list_dict)
+  model = Pipeline([('vectorizer', vec)])
+  ft = model.fit_transform(ft_dic)
 
-  # Save features and preprocessing model
-  save_ft(ft)
-  #save_pp_model(pipe)
-
-  return ft
+  return ft, model
 
 
 def main():
@@ -133,10 +130,13 @@ def main():
   Load data and create features
   """
 
-  data.create_pickled_data(overwrite_old=False)
-  dataset = data.load_pickled_data()
-  train_set = dataset['train']
-  create_ft(train_set)
+  dataset = data.load_pickled_data()#pickled_data_file_path='Data/data_short.pkl')
+  train_size = int(np.floor(TRAINING_PART * len(dataset['train'])))
+  train_set = dataset['train'][0:train_size]
+  ft, ft_model = create_ft(train_set)
+
+  # Save features, names and preprocessing model
+  save_ft(ft, ft_model)
 
 
 if __name__ == '__main__':

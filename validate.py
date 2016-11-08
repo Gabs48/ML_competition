@@ -1,6 +1,7 @@
 """ Script that transform the content of train in sklearn boolean features """
 
 import data
+import features
 import train
 import utils
 
@@ -16,8 +17,60 @@ import sys
 DEFAULT_FT_LOCATION = 'Features'
 DEFAULT_MODEL_LOCATION = 'Models'
 DEFAULT_FT_PATH = os.path.join(DEFAULT_FT_LOCATION, 'features.pkl')
+DEFAULT_FT_NAMES_PATH = os.path.join(DEFAULT_FT_LOCATION, 'ft_names.pkl')
+DEFAULT_FT_MODEL_PATH = os.path.join(DEFAULT_FT_LOCATION, 'ft_model.pkl')
 DEFAULT_MODEL_PATH = os.path.join(DEFAULT_MODEL_LOCATION, 'model.pkl')
-VALIDATION_PART = 1 - train.TRAINING_PART
+
+def add_extra_test_ft(dataset, ft_dic, train_dict):
+  """
+  Add author and hotel id of review to ngram dictionnary
+  TODO: homogeneize author, chotel and ngrams content before to mix them!!
+  """
+
+  print " -- Add author and hotel in features (to update) -- "
+  for i, d in enumerate(ft_dic):
+    hotel = "HOTEL " + str(dataset[i].hotel.id)
+    auth = "AUTH " + str(dataset[i].author)
+    if hotel in train_dict:
+      d[hotel] = 1
+    if auth in train_dict:
+      d[auth] = 1
+
+  return ft_dic
+
+
+def get_test_ft(dataset, ft_mdl):
+  """
+  Compute the test features in the dataset given the set of
+  trianing features
+  """
+
+  print ' -- Compute content features -- '
+  train_dict = ft_mdl.steps[0][1].vocabulary_
+  yes = 0
+  no = 0
+
+  ft_dic = []
+  for i, review in enumerate(dataset):
+    if i%500 == 0:
+      print " -- Iteration " + str(i)
+    d = dict()
+    ngrams_list = list(set(features.create_review_shingle(review)))
+    for ngram in ngrams_list:
+      ngram_word = ' '.join(ngram)
+      if ngram_word in train_dict:
+        d[ngram_word] = 1
+        yes += 1
+      else:
+        no += 1
+    ft_dic.append(d)
+
+  present = 100 * yes / float(yes + no)
+  print " -- " + "{0:.2f}".format(present) + "% of the validation " + \
+  "shingles were present in the feature model and are taken into account -- "
+  ft_dic = add_extra_test_ft(dataset, ft_dic, train_dict)
+
+  return ft_dic
 
 
 def get_model(path=DEFAULT_MODEL_PATH):
@@ -28,31 +81,37 @@ def get_model(path=DEFAULT_MODEL_PATH):
   return utils.load_pickle(path)
 
 
-def validate(val_set, ft_path=DEFAULT_FT_PATH , mdl_path=DEFAULT_MODEL_PATH):
+def get_ft_names(path=DEFAULT_FT_NAMES_PATH):
+  """
+  Load the list of features names
+  """
+
+  return utils.load_pickle(path)
+
+
+def validate(val_set, ft_mdl_path=DEFAULT_FT_MODEL_PATH , lr_mdl_path=DEFAULT_MODEL_PATH):
   """
   Validate a model by returning the loss function on a validation set
   """
 
   print "\n -- VALIDATE A MODEL --"
 
-  # Get model
-  model = get_model(mdl_path)
-
   # Get test target
   val_tg = train.create_target(val_set)
 
-  # Get test features
-  val_ft = train.get_ft(mini=len(val_set), path=ft_path)
+  # Features extraction
+  ft_mdl = get_model(path=ft_mdl_path)
+  val_ft_dict = get_test_ft(val_set, ft_mdl)
+  val_ft = ft_mdl.transform(val_ft_dict)
 
-  print len(val_set), val_ft.shape
-
-  # Predict
-  predict = model.predict(val_ft)
-  score = train.loss_fct(val_tg, predict)
+  # LR predcition
+  lr_mdl = get_model(path=lr_mdl_path)
+  prd = lr_mdl.predict(val_ft)
+  score = train.loss_fct(val_tg, prd)
 
   # Evaluate and save
   print " -- Overal prediction Mean Absolute Error = " + str(score)
-  train.save_score(score, mdl_path, txt="validation")
+  train.save_score(score, lr_mdl_path, txt="validation")
 
   return score
 
@@ -63,23 +122,23 @@ def _parse_args(args):
   """
 
   if not len(args) in (2, 3):
-    print ('Usage: python2 validate.py <path_to_features.plk> <path_to_model.pkl> ')
+    print ('Usage: python2 validate.py <path_to_ft_model.plk> <path_to_lr_mdl.pkl> ')
     return
 
-  ft_path = sys.argv[1]
-  mdl_path = sys.argv[2] if len(sys.argv) == 3 else DEFAULT_MODEL_PATH
+  ft_mdl_path = sys.argv[1]
+  lr_mdl_path = sys.argv[2] if len(sys.argv) == 3 else DEFAULT_MODEL_PATH
   
-  return ft_path, mdl_path
+  return ft_mdl_path, lr_mdl_path
 
 
-def main(ft_path, mdl_path):
+def main(ft_mdl_path, lr_mdl_path):
   data.create_pickled_data(overwrite_old=False)
-  dataset = data.load_pickled_data()
-  val_size = int(np.ceil(VALIDATION_PART * len(dataset['train'])))
+  dataset = data.load_pickled_data()#pickled_data_file_path='Data/data_short.pkl')
+  val_size = int(np.ceil(features.VALIDATION_PART * len(dataset['train'])))
   val_set = dataset['train'][-val_size:]
 
   # Validation
-  score = validate(val_set, ft_path=ft_path, mdl_path=mdl_path)
+  score = validate(val_set, ft_mdl_path=ft_mdl_path, lr_mdl_path=lr_mdl_path)
   
 
 if __name__ == '__main__':

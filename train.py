@@ -1,6 +1,7 @@
 """ Script that transform the content of train in sklearn boolean features """
 
 import data
+import features
 import utils
 
 import numpy as np
@@ -16,7 +17,6 @@ DEFAULT_MODEL_LOCATION = 'Models'
 DEFAULT_FT_LOCATION = 'Features'
 DEFAULT_FT_PATH = os.path.join(DEFAULT_FT_LOCATION, 'features.pkl')
 DEFAULT_MODEL_PATH = os.path.join(DEFAULT_MODEL_LOCATION, 'model.pkl')
-TRAINING_PART = 0.95
 
 
 def get_ft(mini=None, maxi=None, path=DEFAULT_FT_PATH):
@@ -99,28 +99,10 @@ def create_model(ft, target, verbose=0):
   # Verify
   predict = pipe.predict(ft)
   score = loss_fct(target, predict)
-
-  # Save model and score
-  model_filename = save_model(pipe)
-  save_score(score, model_filename)
   print " -- Model created with Mean Absolute Error = " + \
     str(score) + " --"
 
-  return pipe
-
-
-def main(ft_path):
-  data.create_pickled_data(overwrite_old=False)
-  dataset = data.load_pickled_data()
-  train_size = int(np.floor(TRAINING_PART * len(dataset['train'])))
-  train_set = dataset['train'][0:train_size]
-
-  # Get features and target
-  target = create_target(train_set)
-  ft = get_ft(maxi=train_size, path=ft_path)
-
-  # Perform linear regression
-  model = create_model(ft, target)
+  return pipe, score
 
 
 def _parse_args(args):
@@ -136,6 +118,24 @@ def _parse_args(args):
   
   return ft_path
   
+
+def main(ft_path):
+  data.create_pickled_data(overwrite_old=False)
+  dataset = data.load_pickled_data()#pickled_data_file_path='Data/data_short.pkl')
+  train_size = int(np.floor(features.TRAINING_PART * len(dataset['train'])))
+  train_set = dataset['train'][0:train_size]
+
+  # Get features and target
+  target = create_target(train_set)
+  ft = get_ft(path=ft_path)
+
+  # Perform linear regression
+  model, score = create_model(ft, target)
+
+  # Save model and score
+  model_filename = save_model(model)
+  save_score(score, model_filename)
+
 
 if __name__ == '__main__':
   args = sys.argv
