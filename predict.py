@@ -1,77 +1,52 @@
-""" Script that transform the content of train in sklearn boolean features """
+"""Sample script creating some baseline predictions."""
+import os
+
+import numpy as np
 
 import data
 import utils
-import indexation
-
-from collections import defaultdict
-import numpy as np
-import os
-from sklearn.feature_extraction import DictVectorizer
-from sklearn.decomposition import PCA
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-import sys
 
 
-DEFAULT_DATA_LOCATION = 'Data'
-DEFAULT_FT_PATH = os.path.join(DEFAULT_DATA_LOCATION, 'features.pkl')
-DEFAULT_MODEL_PATH = os.path.join(DEFAULT_DATA_LOCATION, 'model.pkl')
+ALL_ZERO_PREDICTIONS_BASENAME = os.path.join('Predictions', 'all_zero')
+AVG_PREDICTIONS_BASENAME = os.path.join('Predictions', 'average')
+
+def predict_average(train_data, test_data):
+  targets = np.array([review.rating for review in train_data])
+  avg = targets.mean()
+  predictions = [avg] * len(test_data)
+  return predictions
 
 
-def get_ft(path=DEFAULT_FT_PATH):
+def _parse_args(args):
   """
-  Load feature vectors
-  """
-  return utils.load_pickle(path)
-
-
-def create_target(dataset):
-
-	target = []
-	for review in dataset:
-		target.append(review.rating)
-
-	return np.array(target)
-
-
-def save_model(model, path=DEFAULT_MODEL_PATH):
-  """
-  Save the training model
-  """
-  utils.dump_pickle(model, path)
-
-
-def create_model(ft, target):
-  """
-  Extract features in two steps:
-   - Creation of a vect dict
-   - PCA to reduce dimensionality
+  Parse argument for validation
   """
 
-  # Create a sklearn pipe
-  clf = LogisticRegression()
-  pipe = Pipeline([('classifier', clf)])
+  if not len(args) in (1, 2):
+    print ('Usage: python2 predict.py <path_to_model.pkl> ')
+    return
 
-  # Apply pipe
-  model = pipe.fit_transform(ft, target)
+  path = sys.argv[1] if len(sys.argv) == 2 else DEFAULT_FT_PATH
+  
+  return path
+  
 
-  # Save features
-  save_model(model)
 
-  return model
-
-def main():
-  data.create_pickled_data(overwrite_old=False)
+def main(path):
   dataset = data.load_pickled_data()
-  train_set = dataset['train']
+  train_data = dataset['train']
+  test_data = dataset['test']
 
-  # Get features and target
-  target = create_target(train_set)
-  ft = get_ft()
+  predictions_avg = predict_average(train_data, test_data)
+  pred_file_name = utils.generate_unqiue_file_name(
+      AVG_PREDICTIONS_BASENAME, 'npy')
+  utils.dump_npy(predictions_avg, pred_file_name)
+  print 'Dumped predictions to %s' % pred_file_name
 
-  # Perform linear regression
-  model = create_model(ft, target)
+
 
 if __name__ == '__main__':
-  main()
+  args = sys.argv
+  arguments = _parse_args(args)
+  if arguments:
+    main(*arguments)

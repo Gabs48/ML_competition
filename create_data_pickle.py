@@ -8,6 +8,7 @@ def main():
   dataset = data.load_pickled_data()
   train_set = dataset['train']
   test_set = dataset['test']
+  val_set = dataset['val']
 
 
 if __name__ == '__main__':

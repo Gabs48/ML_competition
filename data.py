@@ -24,6 +24,7 @@ import utils
 DEFAULT_DATA_LOCATION = 'Data'
 DEFAULT_TRAIN_DATA_LOCATION = os.path.join(DEFAULT_DATA_LOCATION, 'Train')
 DEFAULT_TEST_DATA_LOCATION = os.path.join(DEFAULT_DATA_LOCATION, 'Test')
+DEFAULT_VAL_DATA_LOCATION = os.path.join(DEFAULT_DATA_LOCATION, 'Validate')
 
 DEFAULT_PICKLE_PATH = os.path.join(DEFAULT_DATA_LOCATION, 'data.pkl')
 
@@ -232,6 +233,7 @@ def load_test(test_data_folder=DEFAULT_TEST_DATA_LOCATION):
 
 
 def create_pickled_data(train_data_folder=DEFAULT_TRAIN_DATA_LOCATION,
+                        val_data_folder=DEFAULT_VAL_DATA_LOCATION,
                         test_data_folder=DEFAULT_TEST_DATA_LOCATION,
                         pickled_data_file_path=DEFAULT_PICKLE_PATH,
                         overwrite_old=True):

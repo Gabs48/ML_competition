@@ -15,70 +15,8 @@ import sys
 reload(sys)  
 sys.setdefaultencoding('utf8')
 
-DEFAULT_DATA_LOCATION = 'Data'
-DEFAULT_FT_PATH = os.path.join(DEFAULT_DATA_LOCATION, 'features.pkl')
+DEFAULT_FT_LOCATION = 'Features'
 
-### DEPRECATED
-
-from sklearn.preprocessing import FunctionTransformer
-from sklearn.decomposition import PCA
-
-DEFAULT_INDEX_PATH = os.path.join(DEFAULT_DATA_LOCATION, 'index.npy')
-
-
-def create_data_shingles(dataset):
-  """ 
-  Create and return sets of ngram words from the given field of a full dataset
-  """
-
-  shingles_list = []
-
-  for i, r in enumerate(dataset):
-    if i%2000 == 0:
-      print " -- Process review " + str(i)
-    shingles_list.extend(create_review_shingle(r))
-
-  print " -- Shingle list size = " + str(sys.getsizeof(shingles_list)/1000000)  + " MB"
-  shingles_set = set(shingles_list)
-  print " -- Shingle set size = " + str(sys.getsizeof(shingles_set)/1000000) + " MB"
-  return shingles_set
-
-
-def save_shingles_index(dataset, index_file_path=DEFAULT_INDEX_PATH):
-  """
-  Create and save an index containing the different shingles
-  """
-
-  shingles_set = create_data_shingles(dataset)
-  shingles_list = list(shingles_set)
-  print " -- Shingle list size = " + str(sys.getsizeof(shingles_list)/1000000)  + " MB"
-  index = np.array(shingles_list)
-  print " -- Shingle index size = " + str(index.nbytes/1000000) + " MB"
-  name = index_file_path #utils.generate_unqiue_file_name(index_file_path, 'npy')
-  utils.dump_npy(index, name)
-
-
-def ret_shingles_index_size(index_file_path=DEFAULT_INDEX_PATH):
-  """
-  Return the size of the index
-  """
-
-  return utils.load_npy(index_file_path)
-
-
-def review_to_vec(index=None, index_file_path=DEFAULT_INDEX_PATH):
-  """
-  Transform reiview to a sparse binary vector based on an index table for a given field.
-  The vector element is 1 if it exists in the index, 0 otherwise.
-  """
-
-  if index == None:
-    index = utils.load_npy(index_file_path)
-  vec = np.zeros(ret_shingles_index_size())
-  return vec
-
-
-### IN USE
 
 def seg_norm_text(data):
   """
@@ -95,7 +33,7 @@ def seg_norm_text(data):
   return data_list
 
 
-def create_review_shingle(review, n=3, cat="content"):
+def create_review_shingle(review, n=2):
   """ 
   Create and return sets of ngram words from the given field of a review
   """
@@ -115,7 +53,7 @@ def create_data_dict(dataset):
   Get a dict of features from the given set
   """
   # To dict
-  print " -- Convert review content to ngram dictionnary -- "
+  print " -- Convert dataset content to ngram dictionnary -- "
   ft_dic = []
   for i, review in enumerate(dataset):
     if i%2000 == 0:
@@ -129,13 +67,38 @@ def create_data_dict(dataset):
   return ft_dic
 
 
-def save_ft(features, path=DEFAULT_FT_PATH):
+def add_extra_ft(dataset, data_list):
+  """
+  Add author and hotel id of review to ngram dictionnary
+  TODO: homogeneize author, chotel and ngrams content before to mix them!!
+  """
+
+  print " -- Add author and hotel in features (to update) -- "
+  for i, d in enumerate(data_list):
+    hotel = "HOTEL " + str(dataset[i].hotel.id)
+    auth = "AUTH " + str(dataset[i].author)
+    d[hotel] = 1
+    d[auth] = 1
+
+  return data_list
+
+def save_ft(features, location=DEFAULT_FT_LOCATION):
   """
   Save the features
   """
 
-  utils.dump_pickle(features, path)
-  return
+  filename = os.path.join(location, "features_" + \
+    utils.timestamp() + ".pkl")
+  utils.dump_pickle(features, filename)
+
+  return filename
+
+
+def save_pp_model(model, path):
+  """
+  Save the feature extraction model
+  """
+  utils.dump_pickle(model, path)
 
 
 def create_ft(data):
@@ -145,16 +108,23 @@ def create_ft(data):
    - PCA to reduce dimensionality (deprecated)
   """
 
-  # Create a processing pipe
+  print "\n -- CREATE FEATURES MATRIX --"
+
+  # Create content data dictionnary
+  data_list_dict = create_data_dict(data)
+
+  # Add special entries for author and hotel id
+  data_list_dict = add_extra_ft(data, data_list_dict)
+  
+  # Create and execute a processing pipe for review content
   vec = DictVectorizer()
   pipe = Pipeline([('vectorizer', vec)])
+  ft = pipe.fit_transform(data_list_dict)
 
-  # Apply pipe
-  data_dict = create_data_dict(data)
-  ft = pipe.fit_transform(data_dict)
-
-  # Save features
+  # Save features and preprocessing model
   save_ft(ft)
+  #save_pp_model(pipe)
+
   return ft
 
 
@@ -170,4 +140,4 @@ def main():
 
 
 if __name__ == '__main__':
-  main() 
+  main()
