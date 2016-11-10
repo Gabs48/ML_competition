@@ -8,7 +8,9 @@ import os
 import string
 import re
 import unicodedata
+from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
 import sys
 
@@ -86,6 +88,13 @@ def add_extra_ft(dataset, ft_dic):
 
   return ft_dic
 
+def create_list_content(dataset):
+
+  rev = []
+  for r in dataset:
+    rev.append(r.content)
+
+  return rev
 
 def save_ft(ft, model, location=DEFAULT_FT_LOCATION):
   """
@@ -112,15 +121,18 @@ def create_ft(data):
   print "\n -- CREATE FEATURES MATRIX --"
 
   # Create content data dictionnary
-  ft_dic = create_data_dict(data)
+  #ft_dic = create_data_dict(data)
 
   # Add special entries for author and hotel id
-  ft_dic = add_extra_ft(data, ft_dic)
+  #ft_dic = add_extra_ft(data, ft_dic)
+
+  rev = create_list_content(data)
 
   # Create and execute a processing pipe for review content
-  vec = DictVectorizer()
-  model = Pipeline([('vectorizer', vec)])
-  ft = model.fit_transform(ft_dic)
+  tfidf = TfidfVectorizer(ngram_range=(1,3), stop_words="english")
+  pca = TruncatedSVD(n_components=1000)
+  model = Pipeline([('vectorizer', tfidf), ('pca', pca)])
+  ft = model.fit_transform(rev)
 
   return ft, model
 
@@ -137,7 +149,6 @@ def main():
 
   # Save features, names and preprocessing model
   save_ft(ft, ft_model)
-
 
 if __name__ == '__main__':
   main()
