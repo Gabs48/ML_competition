@@ -129,10 +129,11 @@ def create_ft(data):
   rev = create_list_content(data)
 
   # Create and execute a processing pipe for review content
-  tfidf = TfidfVectorizer(ngram_range=(1,3), stop_words="english")
+  tfidf = TfidfVectorizer(stop_words="english", ngram_range=(1,2), max_features=20000)
   pca = TruncatedSVD(n_components=1000)
-  model = Pipeline([('vectorizer', tfidf), ('pca', pca)])
+  model = Pipeline([('vectorizer', tfidf)])#, ("sel", selecKBest)])#, ('pca', pca)])
   ft = model.fit_transform(rev)
+  print ft
 
   return ft, model
 

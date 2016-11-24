@@ -7,8 +7,11 @@ import utils
 import numpy as np
 import os
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_selection import SelectKBest
 from sklearn.decomposition import PCA
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, BayesianRidge, LinearRegression
+from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import Pipeline
 import sys
 
@@ -91,7 +94,12 @@ def create_model(ft, target, verbose=0):
 
   # Create a sklearn pipe
   clf = LogisticRegression(verbose=verbose)
-  pipe = Pipeline([('classifier', clf)])
+  clf2 = SGDClassifier(verbose=verbose)
+  clf3 = BayesianRidge(verbose=verbose)
+  clf4 = LinearRegression()
+  #selecKBest = SelectKBest(k=10000)
+  pca = TruncatedSVD(n_components=1000)
+  pipe = Pipeline([('classifier', clf2)])#("sel", selecKBest), 
 
   # Apply pipe
   pipe.fit_transform(ft, target)

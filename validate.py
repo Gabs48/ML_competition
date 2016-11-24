@@ -101,8 +101,9 @@ def validate(val_set, ft_mdl_path=DEFAULT_FT_MODEL_PATH , lr_mdl_path=DEFAULT_MO
 
   # Features extraction
   ft_mdl = get_model(path=ft_mdl_path)
-  val_ft_dict = get_test_ft(val_set, ft_mdl)
-  val_ft = ft_mdl.transform(val_ft_dict)
+  #val_ft_dict = get_test_ft(val_set, ft_mdl)
+  val_list = features.create_list_content(val_set)
+  val_ft = ft_mdl.transform(val_list)
 
   # LR predcition
   lr_mdl = get_model(path=lr_mdl_path)
