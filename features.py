@@ -10,8 +10,11 @@ import re
 import unicodedata
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
+
 import sys
 
 reload(sys)  
@@ -88,6 +91,7 @@ def add_extra_ft(dataset, ft_dic):
 
   return ft_dic
 
+
 def create_list_content(dataset):
 
   rev = []
@@ -95,6 +99,7 @@ def create_list_content(dataset):
     rev.append(r.content)
 
   return rev
+
 
 def save_ft(ft, model, location=DEFAULT_FT_LOCATION):
   """
@@ -121,18 +126,23 @@ def create_ft(data):
   print "\n -- CREATE FEATURES MATRIX --"
 
   # Create content data dictionnary
-  #ft_dic = create_data_dict(data)
+  ft_dic = create_data_dict(data)
 
   # Add special entries for author and hotel id
-  #ft_dic = add_extra_ft(data, ft_dic)
+  ft_dic = add_extra_ft(data, ft_dic)
 
-  rev = create_list_content(data)
+  # Create a list of content if we don't preprocess it manually
+  # rev = create_list_content(data)
 
   # Create and execute a processing pipe for review content
-  tfidf = TfidfVectorizer(stop_words="english", ngram_range=(1,2), max_features=20000)
+  cv = CountVectorizer()
+  dv = DictVectorizer()
+  tfidfv = TfidfVectorizer(stop_words="english", ngram_range=(1,2), max_features=20000)
+  tfidft = TfidfTransformer()
   pca = TruncatedSVD(n_components=1000)
-  model = Pipeline([('vectorizer', tfidf)])#, ("sel", selecKBest)])#, ('pca', pca)])
-  ft = model.fit_transform(rev)
+
+  model = Pipeline([("vec", dv), ('tfidf', tfidfv)])#, ("sel", selecKBest)])#, ('pca', pca)])
+  ft = model.fit_transform(ft_dic)
   print ft
 
   return ft, model
