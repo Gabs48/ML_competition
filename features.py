@@ -141,7 +141,7 @@ def create_ft(data):
   tfidft = TfidfTransformer()
   pca = TruncatedSVD(n_components=1000)
 
-  model = Pipeline([("vec", dv), ('tfidf', tfidfv)])#, ("sel", selecKBest)])#, ('pca', pca)])
+  model = Pipeline([("vec", dv), ('tfidf', tfidft)])#, ("sel", selecKBest)])#, ('pca', pca)])
   ft = model.fit_transform(ft_dic)
   print ft
 
