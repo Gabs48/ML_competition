@@ -42,21 +42,6 @@ def to_percent(y, position):
 		return s + '%'
 
 
-def seg_norm_text(text):
-	"""
-	Segment the text according to points and comma, and
-	normalize it by removing all caps, accent and special char
-	"""
-
-	words = [x.strip() for x in re.split('[.,\/#!$%\^&\*;:{}=\-_`~()]', text)]
-
-	for i, t in enumerate(words):
-		words[i] = str(''.join(x for x in unicodedata.normalize('NFKD', unicode(t)) \
-		if x in (string.ascii_letters + string.whitespace)).lower()).split(" ")
-
-	return words
-
-
 def get_text_ngram(text, n=1):
 	""" 
 	Create and return sets of ngram words from the given field of a review
@@ -366,20 +351,13 @@ def plot_product_distro(trainset):
 
 def plot_corr_reiview_length_rating(trainset):
 
-
 	length = []
 	t_init = time.time()
-	for i in range(10000):
-		length.append(len(seg_norm_text(trainset[i].content)))
+	for r in trainset:
+		length.append(len(get_text_ngram(r.content)))
 
 	print 'Vector computed in ' + str(time.time() - t_init)
 
-	length = []
-	t_init = time.time()
-	for i in range(10000):
-		length.append(len(get_text_ngram(trainset[i].content)))
-
-	print 'Vector computed in ' + str(time.time() - t_init)
 
 def main():
 	"""
