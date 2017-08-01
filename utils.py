@@ -60,9 +60,9 @@ def generate_unqiue_file_name(basename, file_ext):
 
 def n2str(num):
 	""" convert a number into a short string"""
-	if abs(num) < 0.01 and abs(num) > 1e-50 or abs(num) > 1E4:
+	if abs(num) < 1 and abs(num) > 1e-50 or abs(num) > 1E4:
 		numFormat =  ".2e"
-	elif abs(round(num) - num) < 0.001 or abs(num) > 1E2:
+	elif abs(round(num) - num) < 0.001 or abs(num) > 1E4:
 		numFormat = ".0f"
 	elif abs(num) > 1E1:
 		numFormat = ".1f"
