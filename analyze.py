@@ -28,7 +28,7 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 DEFAULT_AN_LOCATION = 'Analysis'
-NGRAMS = [1, 2, 3, 4]
+NGRAMS = [3, 4]
 
 def to_percent(y, position):
 	# Ignore the passed in position. This has the effect of scaling the default
@@ -96,6 +96,16 @@ def plot_rating_distro(trainset):
 	plt.savefig(DEFAULT_AN_LOCATION + "/rating_distro.png", format='png', dpi=300)
 	plt.close()
 
+	# Plot correlation between num and average rating by product
+	plt.plot(sorted(ratings), np.arange(0.0, 1.0, 1/float(len(ratings))))
+	plt.xlabel('Rating')
+	plt.tight_layout()
+	axes = plt.gca()
+	axes.set_xlim([0, 6])
+	axes.set_ylim([-0.2, 1.2])
+	plt.savefig(DEFAULT_AN_LOCATION + "/rating_cumulative_distro.png", format='png', dpi=300)
+	plt.close()
+
 
 def plot_content_distro(trainset, forceReprocess=False):
 	"""
@@ -153,55 +163,63 @@ def plot_content_tfidf(trainset):
 	MAXPRINT = 20
 
 	for n in NGRAMS:
+		for j in range(2):
 
-		print "Compute TFIDF for " + str(n) + "-gram words"
-		stop_words = text.ENGLISH_STOP_WORDS.union(["s", "t", "2", "m", "ve"])
-		if n == 1:
-			tfidf_vec = TfidfVectorizer(tokenizer=get_text_ngram, ngram_range=(n, n), stop_words=stop_words)
-		else:
-			tfidf_vec = TfidfVectorizer(tokenizer=get_text_ngram, ngram_range=(n, n))
-		tfs = tfidf_vec.fit_transform(reviews)
+			if j == 0:
+				print "Compute TFIDF for " + str(n) + "-gram words and stop words"
+				stop_words = text.ENGLISH_STOP_WORDS.union(["s", "t", "2", "m", "ve"])
+				tfidf_vec = TfidfVectorizer(tokenizer=get_text_ngram, ngram_range=(n, n), stop_words=stop_words)
+			else:
+				print "Compute TFIDF for " + str(n) + "-gram words without stop words"
+				tfidf_vec = TfidfVectorizer(tokenizer=get_text_ngram, ngram_range=(n, n))
+			tfs = tfidf_vec.fit_transform(reviews)
 
-		names = tfidf_vec.get_feature_names()
-		idf = tfidf_vec.idf_
-		tfidf = np.array(tfs.sum(axis=0).transpose()/len(names)).flatten().tolist()
-		corr = np.array(np.matrix(ratings) * tfs).transpose().flatten().tolist()
+			names = tfidf_vec.get_feature_names()
+			idf = tfidf_vec.idf_
+			tfidf = np.array(tfs.sum(axis=0).transpose()/len(names)).flatten().tolist()
+			corr = np.array(np.matrix(ratings) * tfs).transpose().flatten().tolist()
 
-		# Sort and print ngrams by TFIDF average
-		print "Sort and print results by TFIDF value for " + str(n) + "-gram words"
-		tfidf_s, names_s, idf_s = (list(t) for t in zip(*sorted(zip(tfidf, names, idf), reverse=True)))
+			# Sort and print ngrams by TFIDF average
+			print "Sort and print results by TFIDF value for " + str(n) + "-gram words"
+			tfidf_s, names_s, idf_s = (list(t) for t in zip(*sorted(zip(tfidf, names, idf), reverse=True)))
 
-		file = open(os.path.join(DEFAULT_AN_LOCATION, str(n) + "-gram_tfidf.txt"), "w")
-		st = "\n --- Highest TFIDF for " + str(n) + "-grams ---\n\n"
-		st += "| TFIDF\t\t\t| TF\t\t\t| IDF\t\t| NGRAM\n"
-		st += "-------------------------------------------\n"
-		for i in range(MAXPRINT):
-			st +="| " + n2str(tfidf_s[i]) + "\t\t| " + n2str(tfidf_s[i]/idf_s[i]) + "\t\t| " + n2str(idf_s[i]) + "\t\t| " + str(names_s[i]) + "\n"
-		file.write(st)
-		file.close()
+			if j == 0:
+				file = open(os.path.join(DEFAULT_AN_LOCATION, str(n) + "-gram_tfidf_sw.txt"), "w")
+			else:
+				file = open(os.path.join(DEFAULT_AN_LOCATION, str(n) + "-gram_tfidf.txt"), "w")
+			st = "\n --- Highest TFIDF for " + str(n) + "-grams ---\n\n"
+			st += "| TFIDF\t\t\t| TF\t\t\t| IDF\t\t| NGRAM\n"
+			st += "-------------------------------------------\n"
+			for i in range(MAXPRINT):
+				st +="| " + n2str(tfidf_s[i]) + "\t\t| " + n2str(tfidf_s[i]/idf_s[i]) + "\t\t| " + n2str(idf_s[i]) + "\t\t| " + str(names_s[i]) + "\n"
+			file.write(st)
+			file.close()
 
-		indexes = np.arange(len(names))
-		plt.bar(indexes[0:1000], tfidf_s[0:1000], 1)
-		plt.savefig(DEFAULT_AN_LOCATION + "/tfidf_" + str(n) + "_distro.png", format='png', dpi=300)
-		plt.close()
+			indexes = np.arange(len(names))
+			plt.bar(indexes[0:1000], tfidf_s[0:1000], 1)
+			plt.savefig(DEFAULT_AN_LOCATION + "/tfidf_" + str(n) + "_distro.png", format='png', dpi=300)
+			plt.close()
 
-		# Sort and print correlation between ngrams and rating
-		print "Sort and print correlation between rating and " + str(n) + "-gram words"
-		corr, names = (list(t) for t in zip(*sorted(zip(corr, names), reverse=True)))
+			# Sort and print correlation between ngrams and rating
+			print "Sort and print correlation between rating and " + str(n) + "-gram words"
+			corr, names = (list(t) for t in zip(*sorted(zip(corr, names), reverse=True)))
 
-		file = open(os.path.join(DEFAULT_AN_LOCATION, str(n) + "-gram_corr.txt"), "w")
-		st = "\n --- Highest " + str(n) + "-grams * rating products ---\n\n"
-		st += "|  TFIDF * Rating\t|  NGRAM\n"
-		st += "----------------------------\n"
-		for i in range(int(MAXPRINT/2)):
-			st +="| " + n2str(corr[i]) + "\t\t\t| " + str(names[i]) + "\n"
-		st += "\n --- Lowest " + str(n) + "-grams * rating products ---\n\n"
-		st += "|  TFIDF * Rating\t|  NGRAM\n"
-		st += "----------------------------\n"
-		for i in range(int(MAXPRINT/2)):
-			st +="| " + n2str(corr[-i-1]) + "\t\t\t| " + str(names[-i-1]) + "\n"
-		file.write(st)
-		file.close()
+			if j == 0:
+				file = open(os.path.join(DEFAULT_AN_LOCATION, str(n) + "-gram_corr_sw.txt"), "w")
+			else:
+				file = open(os.path.join(DEFAULT_AN_LOCATION, str(n) + "-gram_corr.txt"), "w")
+			st = "\n --- Highest " + str(n) + "-grams * rating products ---\n\n"
+			st += "|  TFIDF * Rating\t|  NGRAM\n"
+			st += "----------------------------\n"
+			for i in range(int(MAXPRINT/2)):
+				st +="| " + n2str(corr[i]) + "\t\t\t| " + str(names[i]) + "\n"
+			st += "\n --- Lowest " + str(n) + "-grams * rating products ---\n\n"
+			st += "|  TFIDF * Rating\t|  NGRAM\n"
+			st += "----------------------------\n"
+			for i in range(int(MAXPRINT/2)):
+				st +="| " + n2str(corr[-i-1]) + "\t\t\t| " + str(names[-i-1]) + "\n"
+			file.write(st)
+			file.close()
 
 
 def plot_author_distro(trainset):
@@ -349,14 +367,128 @@ def plot_product_distro(trainset):
 	plt.close()
 
 
-def plot_corr_reiview_length_rating(trainset):
+def plot_corr_review_length_rating(trainset):
 
 	length = []
-	t_init = time.time()
+	rating = [r.rating for r in trainset]
+
 	for r in trainset:
 		length.append(len(get_text_ngram(r.content)))
 
-	print 'Vector computed in ' + str(time.time() - t_init)
+	length, rating = (list(t) for t in zip(*sorted(zip(length, rating), reverse=True)))
+
+	# Plot correlation between num and average rating by product
+	print "Pearson correlation factor between number of reviews and average score by product is: " + str(abs(np.corrcoef(rating, length)[0,1]))
+	plt.plot(rating, length, ".")
+	plt.xlabel('Length of the review')
+	plt.ylabel('Rating')
+	plt.tight_layout()
+	axes = plt.gca()
+	axes.set_xlim([0, 6])
+	plt.savefig(DEFAULT_AN_LOCATION + "/review_len_rating_corr.png", format='png', dpi=300)
+	plt.close()
+
+
+	# plt.plot(length, ".")
+	# plt.ylabel('Length of the review')
+	# plt.ylabel('Review number')
+	# plt.tight_layout()
+	# axes = plt.gca()
+	# plt.savefig(DEFAULT_AN_LOCATION + "/review_len.png", format='png', dpi=300)
+	# plt.close()
+
+	plt.plot(sorted(length), np.arange(0.0, 1.0, 1/float(len(length))))
+	plt.xlabel('Rating')
+	plt.tight_layout()
+	axes = plt.gca()
+	axes.set_xlim([min(length)-10, max(length)+10])
+	axes.set_ylim([-0.2, 1.2])
+	plt.savefig(DEFAULT_AN_LOCATION + "/review_len_cumulative_distro.png", format='png', dpi=300)
+	plt.close()
+
+
+def plot_author_2(trainset):
+
+	author_sum = dict()
+	author_len = dict()
+	rating = []
+	number = []
+	index = []
+
+	for r in trainset:
+		if not r.author in author_sum:
+			author_sum[r.author] = r.rating
+			author_len[r.author] = 1
+		else:
+			author_sum[r.author] += r.rating
+			author_len[r.author] += 1
+
+	i = 0
+	for key in author_sum:
+		rating.append(author_sum[key] / float(author_len[key]))
+		number.append(author_len[key])
+		index.append(i)
+		i += 1
+
+	# Normalize the distributions
+	rating = np.array(rating)
+	number = np.array(number)
+	rating, index = (list(t) for t in zip(*sorted(zip(rating, index))))
+
+	plt.plot(rating, ".")
+	plt.xlabel('author')
+	plt.ylabel('average score')
+	plt.tight_layout()
+	axes = plt.gca()
+	axes.set_ylim([0, 6])
+	plt.savefig(DEFAULT_AN_LOCATION + "/author2.png", format='png', dpi=300)
+	plt.close()
+
+
+def plot_product_2(trainset):
+
+	product_sum = dict()
+	product_len = dict()
+	rating = []
+	number = []
+	index = []
+
+	for r in trainset:
+		if not r.product in product_sum:
+			product_sum[r.product] = r.rating
+			product_len[r.product] = 1
+		else:
+			product_sum[r.product] += r.rating
+			product_len[r.product] += 1
+
+	i = 0
+	for key in product_sum:
+		rating.append(product_sum[key] / float(product_len[key]))
+		number.append(product_len[key])
+		index.append(i)
+		i += 1
+
+	# Normalize the distributions
+	rating = np.array(rating)
+	number = np.array(number)
+	rating, index = (list(t) for t in zip(*sorted(zip(rating, index))))
+
+	plt.plot(rating, ".")
+	plt.xlabel('product')
+	plt.ylabel('average score')
+	plt.tight_layout()
+	axes = plt.gca()
+	axes.set_ylim([0, 6])
+	plt.savefig(DEFAULT_AN_LOCATION + "/product2.png", format='png', dpi=300)
+	plt.close()
+
+
+def plot_date(trainset):
+
+	date = [r.date for r in trainset]
+	print date
+
+
 
 
 def main():
@@ -365,16 +497,18 @@ def main():
 	"""
 
 	dataset = data.load_pickled_data()
-	train_set = dataset['train']
+	train_set = dataset['train'][0:100000]
 	make_dir(DEFAULT_AN_LOCATION)
 
-	# plot_rating_distro(train_set)
+	#plot_rating_distro(train_set)
 	# plot_product_distro(train_set)
 	# plot_author_distro(train_set)
-	#plot_content_tfidf(train_set)
+	plot_content_tfidf(train_set)
 	#plot_content_distro(train_set)
-	plot_corr_reiview_length_rating(train_set)
-
+	# plot_corr_review_length_rating(train_set)
+	# plot_author_2(train_set)
+	# plot_product_2(train_set)
+	#plot_date(train_set)
 
 if __name__ == '__main__':
 	main() 
