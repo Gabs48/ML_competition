@@ -1,15 +1,16 @@
 """Script loading the pickle files and creating a set of features to be processed."""
 
+import analyze
 import data
 import utils
 
+
 import numpy as np
 import os
-import string
-import re
-import unicodedata
-from sklearn.feature_extraction import DictVectorizer
-from sklearn.pipeline import Pipeline
+from scipy.sparse import hstack, csr_matrix, lil_matrix
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.feature_extraction import text
+from sklearn.model_selection import *
 import sys
 
 reload(sys)  
@@ -17,74 +18,135 @@ sys.setdefaultencoding('utf8')
 
 DEFAULT_FT_LOCATION = 'Features'
 TRAINING_PART = 0.95
-VALIDATION_PART = 1 - TRAINING_PART
+VALIDATE_PART = 1 - TRAINING_PART
+RANDOM = 42
 
 
-def seg_norm_text(data):
+class ReviewsFeaturesExtractor(BaseEstimator, TransformerMixin):
 	"""
-	Segment the text according to points and comma, and
-	normalize it by removing all caps, accent and special char
-	"""
- 
-	data_list = [x.strip() for x in re.split('[.,\/#!$%\^&\*;:{}=\-_`~()]', data)]
-	
-	for i, t in enumerate(data_list):
-		data_list[i] = str(''.join(x for x in unicodedata.normalize('NFKD', unicode(t)) \
-		if x in (string.ascii_letters + string.whitespace)).lower()).split(" ")
-
-	return data_list
-
-
-def create_review_shingle(review, n=3):
-	""" 
-	Create and return sets of ngram words from the given field of a review
+	Custom SKLearn estimator that extract features from a dataset
 	"""
 
-	r_list = seg_norm_text(review.content)
-	shingles = []
+	def __init__(self, frac=0.59, low_boundary=0.4, ngram=4):
 
-	for r in r_list:
-		if len(r) >= n:
-				for j in range(n):
-					shingles.extend([tuple(r[i:i+n-j]) for i in xrange(len(r)-n)])
+		self.frac = frac
+		self.low_boundary = low_boundary
+		self.ngram = ngram
+		self.features_names = np.array([])
+		self.dataset = None
 
-	return shingles
-	
+	def fit(self, x, y=None):
 
-def create_data_dict(dataset):
-	"""
-	Get a dict of features from the given set
-	"""
+		return self
 
-	print " -- Convert dataset content to ngram dictionnary -- "
-	ft_dic = []
-	for i, review in enumerate(dataset):
-		if i%2000 == 0:
-			print " -- Iteration " + str(i)
-		d = dict()
-		ngrams_list = list(set(create_review_shingle(review)))
-		for ngram in ngrams_list:
-			ngram_word = ' '.join(ngram)
-			d[ngram_word] = 1
-		ft_dic.append(d)
+	def transform(self, dataset):
+		"""
+		Extract and combine all features
+		"""
 
-	return ft_dic
+		# Extract feature matrices
+		print "Process the text"
 
+		ct_ft, ct_nm = self.content_ft(dataset)
 
-def add_extra_ft(dataset, ft_dic):
-	"""
-	Add author and hotel id of review to ngram dictionnary
-	TODO: homogeneize author, chotel and ngrams content before to mix them!!
-	"""
+		print "Fill the features matrices"
 
-	print " -- Add author and hotel in features (to update) -- "
-	for i, d in enumerate(ft_dic):
-		hotel = "HOTEL " + str(dataset[i].hotel.id)
-		auth = "AUTH " + str(dataset[i].author)
-		d[hotel] = 1
-		d[auth] = 1
+		# Training phase
+		if self.features_names.size == 0:
+			features_matrix = ct_ft
+			self.features_names = ct_nm
 
-	return ft_dic
+		# Test and validation phase
+		else:
+			features_matrix = lil_matrix((len(dataset), self.features_names.size))
+			# print ct_ft.tocsr().shape, features_matrix.shape, np.in1d(self.features_names, ct_nm).shape, np.in1d(ct_nm, self.features_names).shape
+			for row in range(features_matrix.shape[0]):
+				features_matrix[row, np.in1d(self.features_names, ct_nm)] = ct_ft.tolil()[row, np.in1d(ct_nm, self.features_names)]
+
+		return features_matrix
+
+	def content_ft(self, dataset):
+		"""
+		Create a feature matrix from the content of a review
+		"""
+
+		names_array = np.array([])
+		features_matrix = np.array([])
+
+		for n in range(1, self.ngram+1):
+
+			print "Compute the " + str(n) + "-gram words"
+
+			# Create TFIDF vectorizer for ngram words
+			if n >= 4:
+				tfidf_vec = text.TfidfVectorizer(tokenizer=analyze.get_text_ngram, ngram_range=(n, n))
+			else:
+				stop_words = text.ENGLISH_STOP_WORDS.union(["s", "t", "2", "m", "ve"])
+				tfidf_vec = text.TfidfVectorizer(tokenizer=analyze.get_text_ngram, ngram_range=(n, n), stop_words=stop_words)
+
+			# Compute the feature matrix
+			tfidf = tfidf_vec.fit_transform([r.content for r in dataset])
+			names = np.array(tfidf_vec.get_feature_names())
+
+			# Sort and partition the tfidf matrix of ngram words
+			tfidf_sum = np.array(tfidf.sum(axis=0).transpose().flatten())
+			split_indexes = tfidf_sum.argsort()[0]
+			low_b = int(self.low_boundary * len(split_indexes))
+			up_b = low_b + int(self.frac * len(split_indexes))
+			tfidf_sorted = tfidf[:, split_indexes[low_b:up_b]]
+			names_sorted = names[split_indexes[low_b:up_b]]
+
+			# Fill the feature matrix with the values
+			if features_matrix.size == 0:
+				features_matrix = tfidf_sorted
+				names_array = names_sorted
+			else:
+				features_matrix = hstack((features_matrix, tfidf_sorted))
+				names_array = np.hstack((names_array, names_sorted))
+
+		return features_matrix, names_array
+
+	def summary_ft(self):
+		"""
+		Create a feature matrix from the summary of a review
+		"""
+
+		return
+
+	def product_ft(self):
+		"""
+		Create a feature matrix from the product of a review
+		"""
+
+		return
+
+	def author_ft(self):
+		"""
+		Create a feature matrix from the author of a review
+		"""
+
+		return
+
+	def date_ft(self):
+		"""
+		Create a feature matrix from the date of a review
+		"""
+
+		return
+
+	def helpful_ft(self):
+		"""
+		Create a feature matrix from the helpfulness of a review
+		"""
+
+		return
+
+	def get_feature_names(self):
+		"""
+		Return an array with the features name
+		"""
+
+		return self.features_names
 
 
 def save_ft(ft, model, location=DEFAULT_FT_LOCATION):
@@ -104,40 +166,26 @@ def save_ft(ft, model, location=DEFAULT_FT_LOCATION):
 	return filename
 
 
-def create_ft(data):
-	"""
-	Extract features and create a vectorized dictionnary
-	"""
-
-	print "\n -- CREATE FEATURES MATRIX --"
-
-	# Create content data dictionnary
-	ft_dic = create_data_dict(data)
-
-	# Add special entries for author and hotel id
-	ft_dic = add_extra_ft(data, ft_dic)
-
-	# Create and execute a processing pipe for review content
-	vec = DictVectorizer()
-	model = Pipeline([('vectorizer', vec)])
-	ft = model.fit_transform(ft_dic)
-
-	return ft, model
-
 
 def main():
 	"""
 	Load data and create features
 	"""
 
-	dataset = data.load_pickled_data()#pickled_data_file_path='Data/data_short.pkl')
-	train_size = int(np.floor(TRAINING_PART * len(dataset['train'])))
-	train_set = dataset['train'][0:train_size]
-	ft, ft_model = create_ft(train_set)
+	dataset = data.load_pickled_data()
+	training_set, validate_set = train_test_split(dataset["train"], test_size=VALIDATE_PART, random_state=RANDOM)
+	training_set = training_set[0:10000]
+	validate_set = validate_set
+	ft_extractor = ReviewsFeaturesExtractor(ngram=1)
 
-	# Save features, names and preprocessing model
-	save_ft(ft, ft_model)
+	training_ft = ft_extractor.fit_transform(training_set)
+	validate_ft = ft_extractor.fit_transform(validate_set)
+
+	print training_ft.shape, validate_ft.shape, ft_extractor.fit(np.array([]))
+
+	save_ft(training_ft, ft_extractor)
 
 
 if __name__ == '__main__':
+
 	main()

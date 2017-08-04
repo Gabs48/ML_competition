@@ -3,24 +3,21 @@
 import data
 from utils import *
 
+import datetime
 from collections import Counter, OrderedDict
-import numpy as np
-import nltk
 from nltk.tokenize import RegexpTokenizer
 from nltk.util import ngrams
+from nltk import wordpunct_tokenize
+from nltk.corpus import stopwords
 import matplotlib
 matplotlib.use("Agg")
+from matplotlib.dates import DateFormatter
 from matplotlib.mlab import *
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
-from operator import itemgetter
-import re
-import string
 import sys
-from sklearn.preprocessing import normalize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import text
-import unicodedata
 
 plt.style.use('fivethirtyeight')
 
@@ -28,18 +25,7 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 DEFAULT_AN_LOCATION = 'Analysis'
-NGRAMS = [3, 4]
-
-def to_percent(y, position):
-	# Ignore the passed in position. This has the effect of scaling the default
-	# tick locations.
-	s = str(100 * y)
-
-	# The percent symbol needs escaping in latex
-	if matplotlib.rcParams['text.usetex'] is True:
-		return s + r'$\%$'
-	else:
-		return s + '%'
+NGRAMS = [1, 2, 3, 4]
 
 
 def get_text_ngram(text, n=1):
@@ -59,20 +45,6 @@ def get_text_ngram(text, n=1):
 
 	## TODO: + stopwords + stemming: http://www.cs.duke.edu/courses/spring14/compsci290/assignments/lab02.html
 	## and comparaison of results
-
-
-def get_trainset_ngrams(trainset, n=3):
-	""" 
-	Create and return sets of ngram words for a whole trainset
-	"""
-
-	ngrams_dataset = []
-
-	for r in trainset:
-		ngram_review = get_review_ngram(r)
-		ngrams_dataset.extend(ngrams_review)
-
-	return ngrams_dataset
 
 
 def plot_rating_distro(trainset):
@@ -124,10 +96,9 @@ def plot_content_distro(trainset, forceReprocess=False):
 		if os.path.exists(filename) and not forceReprocess:
 
 			print 'Load ' + str(n) + '-gram from file!'
- 			ngrams_dataset = load_pickle(filename)
- 			
+			ngrams_dataset = load_pickle(filename)
 
- 		# Or compute them
+		# Or compute them
 		else:
 
 			print 'Compute ' + str(n) + '-gram!'
@@ -485,10 +456,126 @@ def plot_product_2(trainset):
 
 def plot_date(trainset):
 
-	date = [r.date for r in trainset]
-	print date
+	# Re-arrange the data
+	date_sum = dict()
+	date_len = dict()
+	date = []
+	for r in trainset:
+		date_tab = [int(e) for e in r.date.translate(None, ';,').split()]
+		date_num = datetime.date(date_tab[2], date_tab[0], date_tab[1])
+		date.append(date_num)
+		if not date_num.toordinal() in date_sum:
+			date_sum[date_num.toordinal()] = r.rating
+			date_len[date_num.toordinal()] = 1
+		else:
+			date_sum[date_num.toordinal()] += r.rating
+			date_len[date_num.toordinal()] += 1
+
+	rating_av = []
+	index = []
+	date = np.array(date)
+	for key in date_sum:
+		rating_av.append(date_sum[key] / float(date_len[key]))
+		index.append(key)
+
+	index, rating_av = (list(t) for t in zip(*sorted(zip(index, rating_av))))
+	date_av = np.array([datetime.date.fromordinal(o) for o in index])
+
+	# Plot average rating evolution over time
+	fig, ax = plt.subplots()
+	ax.plot(date_av, rating_av, ".")
+	lp_window = 50
+	ax.plot(date_av[(lp_window/2):-(lp_window/2)+1], lp_filter(rating_av, lp_window))
+	plt.xlabel('Date')
+	plt.ylabel('Average score')
+	plt.tight_layout()
+	ax.fmt_xdata = DateFormatter('%Y-%m')
+	ax.set_ylim([0, 6])
+	plt.savefig(DEFAULT_AN_LOCATION + "/date.png", format='png', dpi=300)
+	plt.close()
+
+	# Plot date cumulative distribution
+	fig, ax = plt.subplots()
+	ax.plot(sorted(date), np.arange(0.0, 1.0, 1/float(len(date))))
+	plt.xlabel('Date')
+	plt.ylabel('Cumulative distribution')
+	formatter = FuncFormatter(to_percent)
+	ax.yaxis.set_major_formatter(formatter)
+	ax.fmt_xdata = DateFormatter('%Y-%m')
+	plt.tight_layout()
+	plt.savefig(DEFAULT_AN_LOCATION + "/date_cum_distro.png", format='png', dpi=300)
+	plt.close()
+
+	# Plot date distribution
+	d = 100
+	left_of_first_bin = np.array(index).min() - float(d) / 2
+	right_of_last_bin = np.array(index).max() + float(d) / 2
+	fig, ax = plt.subplots()
+	ax.hist(date, np.arange(left_of_first_bin, right_of_last_bin + d, d), normed=True)
+	plt.xlabel('Date')
+	plt.ylabel('Distribution Percentage')
+	formatter = FuncFormatter(to_percent)
+	ax.yaxis.set_major_formatter(formatter)
+	ax.fmt_xdata = DateFormatter('%Y-%m')
+	plt.tight_layout()
+	plt.savefig(DEFAULT_AN_LOCATION + "/date_distro.png", format='png', dpi=300)
+	plt.close()
 
 
+def detect_language(text):
+
+	l_ratios = {}
+	tokens = wordpunct_tokenize(text)
+	words = [word.lower() for word in tokens]
+
+	for l in stopwords.fileids():
+		stopwords_set = set(stopwords.words(l))
+		words_set = set(words)
+		common_set = words_set.intersection(stopwords_set)
+
+		l_ratios[l] = len(common_set)
+
+	return max(l_ratios, key=l_ratios.get)
+
+
+def plot_languages(trainset):
+
+	language = []
+	i = 0
+
+	for r in trainset:
+
+		language.append(detect_language(r.content))
+
+		if i%50 == 0:
+			print "Finding language for review " + str(i) + "/" + str(len(trainset))
+		i += 1
+
+	language_count = Counter(language)
+
+	labels, values = zip(*language_count.most_common(5))
+	values, labels = (list(t) for t in zip(*sorted(zip(values, labels), reverse=True)))
+
+	indexes = np.arange(len(labels))
+	width = 1
+
+	barlist = plt.bar(indexes, values, width)
+	cols = plt.rcParams['axes.prop_cycle']
+	col_list = []
+	for v in cols:
+		col_list.append(v)
+	for i, b in enumerate(barlist):
+		b.set_color(col_list[i%len(col_list)]["color"])
+	plt.xticks(indexes + width * 0.5, labels)
+	plt.xlabel('Language')
+	plt.ylabel('Number of reviews')
+	plt.tight_layout()
+	plt.savefig(DEFAULT_AN_LOCATION + "/languages.png", format='png', dpi=300)
+	plt.close()
+
+	with open(os.path.join(DEFAULT_AN_LOCATION, "language.txt"), "w") as f:
+		for k, v in language_count.most_common():
+			f.write("{} {}\n".format(k, v))
 
 
 def main():
@@ -497,18 +584,18 @@ def main():
 	"""
 
 	dataset = data.load_pickled_data()
-	train_set = dataset['train'][0:100000]
+	train_set = dataset['train']
 	make_dir(DEFAULT_AN_LOCATION)
 
-	#plot_rating_distro(train_set)
+	# plot_rating_distro(train_set)
 	# plot_product_distro(train_set)
 	# plot_author_distro(train_set)
-	plot_content_tfidf(train_set)
-	#plot_content_distro(train_set)
+	# plot_content_tfidf(train_set)
 	# plot_corr_review_length_rating(train_set)
 	# plot_author_2(train_set)
 	# plot_product_2(train_set)
-	#plot_date(train_set)
+	# plot_date(train_set)
+	plot_languages(train_set)
 
 if __name__ == '__main__':
 	main() 

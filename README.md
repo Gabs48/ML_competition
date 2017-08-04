@@ -1,6 +1,18 @@
 # Machine Learning Kaggle Competition
 Code of the Kaggle competition for the Machine Learning course
 
+## Libraries
+Install libraries with pip:
+~~~bash
+pip install nltk
+~~~
+Then in a python terminal:
+
+~~~python
+import nltk
+nltk.download()
+~~~
+
 ## Principle
 
 Used techniques are:

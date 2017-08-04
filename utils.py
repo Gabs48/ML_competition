@@ -1,6 +1,10 @@
 """Module containing utility functions."""
+
+import numpy as np
+import matplotlib
 import os
 import time
+
 
 try:
 	import cPickle as pickle
@@ -8,7 +12,7 @@ except:
 	print "Warning: Couldn't import cPickle, using native pickle instead."
 	import pickle
 
-import numpy as np
+matplotlib.use("Agg")
 
 
 ## Disk access function ##
@@ -18,9 +22,11 @@ def _make_dir(path):
 	if not os.path.exists(path_dir):
 		os.makedirs(path_dir)
 
+
 def make_dir(path):
 	if not os.path.exists(path):
 		os.makedirs(path)		
+
 
 def dump_pickle(data, path):
 	"""Dumps data to a pkl file."""
@@ -51,12 +57,15 @@ def load_npy(path):
 	return np.load(path)
 
 
+## Formatting functions ##
+
 def timestamp():
 		return time.strftime("%Y%m%d-%H%M%S", time.localtime())
 
 
 def generate_unqiue_file_name(basename, file_ext):
 	return basename + '_' + timestamp() + '.' + file_ext
+
 
 def n2str(num):
 	""" convert a number into a short string"""
@@ -69,3 +78,25 @@ def n2str(num):
 	else:
 		numFormat = ".2f"
 	return ("{:" + numFormat + "}").format(num)
+
+
+def to_percent(y, position):
+	"""
+	This formatter transforms a matplotlib axis from values beween 0 and 1
+	to percents.
+	"""
+	s = str(100 * y)
+
+	# The percent symbol needs escaping in latex
+	if matplotlib.rcParams['text.usetex'] is True:
+		return s + r'$\%$'
+	else:
+		return s + '%'
+
+## Mathematical operation functions ##
+
+def lp_filter(array, window):
+
+	averageArr = np.convolve(array, np.ones((window,))/window, mode='valid')
+
+	return averageArr

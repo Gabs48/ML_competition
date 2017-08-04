@@ -99,7 +99,6 @@ def _parse_rating_line(rating_line):
   return int(rating_string)
 
 
-
 def _parse_single_product_review(review_lines):
   (author_line, product_line, date_line, summary_line,
       content_line, helpful_line, rating_line) = review_lines
