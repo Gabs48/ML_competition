@@ -148,6 +148,9 @@ def plot_content_tfidf(trainset):
 			names = tfidf_vec.get_feature_names()
 			idf = tfidf_vec.idf_
 			tfidf = np.array(tfs.sum(axis=0).transpose()/len(names)).flatten().tolist()
+			N = len(reviews)
+			df = ((N + 1) / (np.e**(idf - 1))) - 1
+			df_ratio = df / N
 			corr = np.array(np.matrix(ratings) * tfs).transpose().flatten().tolist()
 
 			# Sort and print ngrams by TFIDF average
@@ -168,7 +171,31 @@ def plot_content_tfidf(trainset):
 
 			indexes = np.arange(len(names))
 			plt.bar(indexes[0:1000], tfidf_s[0:1000], 1)
-			plt.savefig(DEFAULT_AN_LOCATION + "/tfidf_" + str(n) + "_distro.png", format='png', dpi=300)
+			plt.tight_layout()
+			if j == 0:
+				plt.savefig(DEFAULT_AN_LOCATION + "/tfidf_" + str(n) + "_sw_distro.png", format='png', dpi=300)
+			else:
+				plt.savefig(DEFAULT_AN_LOCATION + "/tfidf_" + str(n) + "_distro.png", format='png', dpi=300)
+			plt.close()
+
+			indexes = np.arange(len(names))
+			plt.plot(indexes[0:1000], sorted(df, reverse=True)[0:1000], ".")
+			plt.ylim([0, N])
+			plt.tight_layout()
+			if j == 0:
+				plt.savefig(DEFAULT_AN_LOCATION + "/df_" + str(n) + "_sw_distro.png", format='png', dpi=300)
+			else:
+				plt.savefig(DEFAULT_AN_LOCATION + "/df_" + str(n) + "_distro.png", format='png', dpi=300)
+			plt.close()
+
+			indexes = np.arange(len(names))
+			plt.plot(indexes[0:1000], sorted(df_ratio, reverse=True)[0:1000], ".")
+			plt.ylim([0, 1])
+			plt.tight_layout()
+			if j == 0:
+				plt.savefig(DEFAULT_AN_LOCATION + "/df_ratio_" + str(n) + "_sw_distro.png", format='png', dpi=300)
+			else:
+				plt.savefig(DEFAULT_AN_LOCATION + "/df_ratio_" + str(n) + "_distro.png", format='png', dpi=300)
 			plt.close()
 
 			# Sort and print correlation between ngrams and rating
@@ -590,12 +617,12 @@ def main():
 	# plot_rating_distro(train_set)
 	# plot_product_distro(train_set)
 	# plot_author_distro(train_set)
-	# plot_content_tfidf(train_set)
+	plot_content_tfidf(train_set)
 	# plot_corr_review_length_rating(train_set)
 	# plot_author_2(train_set)
 	# plot_product_2(train_set)
 	# plot_date(train_set)
-	plot_languages(train_set)
+	#plot_languages(train_set)
 
 if __name__ == '__main__':
 	main() 
