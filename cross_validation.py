@@ -26,34 +26,39 @@ def perform_cross_validation(filename=None):
 	# Iterate on the ngrams length
 	for n in range(1,4):
 
-		# Iterate on the lowest boundary in the ngram-dataset
-		for lb in [0.1, 0.2, 0.3, 0.4, 0.5]:
+		# Iterate on the lowest boundary of the document frequency
+		for min_df in [0.0001, 0.001, 0.01]:
 
-			# Iterate on the training/validation split
-			for seed in [random.randint(0, 1000) for i in xrange(5)]:
+			# Iterate on the highest boundary of the document frequency
+			for max_df in [0.2, 0.3, 0.4, 0.5, 0.6]:
 
-				# Get the data
-				dataset = data.load_pickled_data()
+				# Iterate on the training/validation split
+				for seed in [random.randint(0, 1000) for i in xrange(5)]:
 
-				# Set the model
-				training_set, validate_set = train_test_split(dataset["train"], test_size=VALIDATE_PART, random_state=seed)
-				target_training = train.create_target(training_set)
-				target_validate = train.create_target(validate_set)
+					# Get the data
+					dataset = data.load_pickled_data()
 
-				ft_extractor = features.ReviewsFeaturesExtractor(ngram=n, frac=FRACTION, low_boundary=lb)
-				classifier = LogisticRegression(verbose=0)
-				pipe = Pipeline([('ft_extractor', ft_extractor), ('classifier', classifier)])
+					# Set the model
+					training_set, validate_set = train_test_split(dataset["train"],
+						test_size=VALIDATE_PART, random_state=seed)
+					target_training = train.create_target(training_set)
+					target_validate = train.create_target(validate_set)
 
-				# Train and validate the model
-				pipe.fit_transform(training_set, target_training)
-				pred_training = pipe.predict(training_set)
-				pred_validate = pipe.predict(validate_set)
+					ft_extractor = features.ReviewsFeaturesExtractor(ngram=n, min_df=min_df, max_df=max_df)
+					classifier = LogisticRegression(verbose=0)
+					pipe = Pipeline([('ft_extractor', ft_extractor), ('classifier', classifier)])
 
-				score_training = train.loss_fct(target_training, pred_training)
-				score_validate = train.loss_fct(target_validate, pred_validate)
+					# Train and validate the model
+					pipe.fit_transform(training_set, target_training)
+					pred_training = pipe.predict(training_set)
+					pred_validate = pipe.predict(validate_set)
 
-				cross_validation.append({"n": n, "lb": lb, "seed": seed, "st":score_training, "sv": score_validate})
-				utils.dump_pickle(cross_validation, filename)
+					score_training = train.loss_fct(target_training, pred_training)
+					score_validate = train.loss_fct(target_validate, pred_validate)
+
+					cross_validation.append({"n": n, "min_df": min_df, "max_df": max_df, "seed": seed,
+						"st": score_training, "sv": score_validate})
+					utils.dump_pickle(cross_validation, filename)
 
 
 if __name__ == '__main__':
