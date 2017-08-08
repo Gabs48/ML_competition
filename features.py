@@ -41,7 +41,7 @@ class ReviewsFeaturesExtractor(BaseEstimator, TransformerMixin):
 
 		return self
 
-	def fit_transform(self, dataset):
+	def fit_transform(self, dataset, y=None):
 		"""
 		Compute a new set of features from all dataset fields
 		"""

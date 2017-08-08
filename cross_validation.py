@@ -9,6 +9,7 @@ import random
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+import sys
 
 DEFAULT_CV_LOCATION = 'CrossValidation'
 TRAINING_PART = 0.95
@@ -19,9 +20,9 @@ FRACTION = 0.5
 
 def perform_cross_validation(filename=None):
 
-	cross_validation = []
+	cross_validation = []  # ("n", "min_df", "max_df", "seed", "score_training", "score_validate")
 	if filename is None:
-		filename = os.path.join(DEFAULT_CV_LOCATION, "cross_validation.pkl")
+		filename = os.path.join(DEFAULT_CV_LOCATION, "cross_validation_" + utils.timestamp() + ".pkl")
 
 	# Iterate on the ngrams length
 	for n in range(1,4):
@@ -41,6 +42,7 @@ def perform_cross_validation(filename=None):
 					# Set the model
 					training_set, validate_set = train_test_split(dataset["train"],
 						test_size=VALIDATE_PART, random_state=seed)
+					training_set = training_set
 					target_training = train.create_target(training_set)
 					target_validate = train.create_target(validate_set)
 
@@ -56,11 +58,23 @@ def perform_cross_validation(filename=None):
 					score_training = train.loss_fct(target_training, pred_training)
 					score_validate = train.loss_fct(target_validate, pred_validate)
 
-					cross_validation.append({"n": n, "min_df": min_df, "max_df": max_df, "seed": seed,
-						"st": score_training, "sv": score_validate})
+					cross_validation.append((n, min_df, max_df, seed, score_training, score_validate))
 					utils.dump_pickle(cross_validation, filename)
 
 
+def plot_cross_validation(filename):
+
+	results = utils.load_pickle(filename)
+	print results
+
 if __name__ == '__main__':
 
-	perform_cross_validation()
+	args = sys.argv
+
+	if args[1] == "compute":
+		perform_cross_validation()
+	elif args[1] == "plot":
+		plot_cross_validation(args[2])
+	else:
+		print "Please, possible uses are 'python cross_validation.py compute' or " \
+			"'python cross_validation.py plot file.pkl'"
