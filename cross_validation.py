@@ -98,7 +98,7 @@ def perform_cross_validation(filename=None):
 	# Create the parameters for a cross-validation experiment
 	parameters = []
 	for n in [1, 2, 3, 4]:
-		for min_df in np.logspace(-5, -1, num=10):
+		for min_df in np.logspace(-1, -5, num=10):
 			for max_df in [0.3]:
 				for seed in [random.randint(0, 1000) for i in xrange(6)]:
 					parameters.append((n, min_df, max_df, seed, filename))
