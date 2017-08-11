@@ -4,6 +4,7 @@ import train
 import utils
 
 import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from multiprocessing import Pool, Lock
 import numpy as np
@@ -16,7 +17,6 @@ import sys
 import time
 
 # Configuration
-matplotlib.use("Agg")
 plt.style.use('fivethirtyeight')
 
 # Global constants
@@ -198,7 +198,6 @@ def parallel_ct_pd_au(filename=None):
 def plot_ct(filename):
 
 	results = utils.load_pickle(filename)
-	print results
 
 	# Transcript results
 	score_training_ma = dict()
@@ -256,39 +255,114 @@ def plot_ct(filename):
 					t_validate_mi[r[0]][r[2]][r[1]].append(r[7])
 
 	# Plot max_df evolution
-	#for n in score_training_ma:
-	#	for min_df in score_training_ma[n]:
-	#		st_d = score_training_ma[n][min_df]
-	#		sv_d = score_validate_ma[n][min_df]
-	#		st_k = sorted(st_d.iterkeys())
-	#		x = [max_df for max_df in st_k]
-	#		st = [np.mean(st_d[max_df]) for max_df in st_k]
-	#		st_err = [np.std(st_d[max_df]) for max_df in st_k]
-	#		sv = [np.mean(sv_d[max_df]) for max_df in st_k]
-	#		sv_err = [np.std(sv_d[max_df]) for max_df in st_k]
-	#		plt.errorbar(x, st, st_err)
-	#		plt.errorbar(x, sv, sv_err)
-	#		plt.tight_layout()
-	#		plt.savefig(DEFAULT_CV_LOCATION + "/cv_maxdf_" + str(n) + "_" + str(min_df) + ".png", format='png', dpi=300)
-	#		plt.close()
-
-	# Plot max_df evolution
 	for n in score_training_mi:
 		for max_df in score_training_mi[n]:
 			st_d = score_training_mi[n][max_df]
 			sv_d = score_validate_mi[n][max_df]
+			tt_d = t_training_mi[n][max_df]
+			tv_d = t_validate_mi[n][max_df]
 			st_k = sorted(st_d.iterkeys())
 			x = [min_df for min_df in st_k]
 			st = [np.mean(st_d[min_df]) for min_df in st_k]
 			st_err = [np.std(st_d[min_df]) for min_df in st_k]
 			sv = [np.mean(sv_d[min_df]) for min_df in st_k]
 			sv_err = [np.std(sv_d[min_df]) for min_df in st_k]
-			plt.errorbar(x, st, st_err)
-			plt.errorbar(x, sv, sv_err)
+			tt = [np.mean(tt_d[min_df]) for min_df in st_k]
+			tt_err = [np.std(tt_d[min_df]) for min_df in st_k]
+			tv = [np.mean(tv_d[min_df]) for min_df in st_k]
+			tv_err = [np.std(tv_d[min_df]) for min_df in st_k]
+
+			fig, ax1 = plt.subplots()
+			ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
+			ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
+			ax1.set_xlabel('Threshold ratio for the lower ngram')
+			ax1.set_ylabel('Score')
+			ax1.tick_params('y', color=utils.get_style_colors()[0])
+
+			ax2 = ax1.twinx()
+			ax2.errorbar(x, tt, tt_err, color=utils.get_style_colors()[2], linewidth=1.5)
+			ax2.set_ylabel('Training time (s)', color=utils.get_style_colors()[2])
+			ax2.tick_params('y', colors=utils.get_style_colors()[2])
+			ax2.grid(b=False)
+
 			plt.xscale('log')
-			plt.tight_layout()
+			fig.tight_layout()
 			plt.savefig(DEFAULT_CV_LOCATION + "/cv_mindf_" + str(n) + "_" + str(max_df) + ".png", format='png', dpi=300)
 			plt.close()
+
+
+def plot_ct_pd_au(filename):
+
+	results = utils.load_pickle(filename)
+
+	# # Transcript results
+	# score_training = dict()
+	# score_validate = dict()
+	# t_training = dict()
+	# t_validate = dict()
+
+	# for r in results:
+	# 	if r[0] not in score_training:
+	# 		score_training[r[0]] = dict()
+	# 		score_validate[r[0]] = dict()
+	# 		t_training[r[0]] = dict()
+	# 		t_validate[r[0]] = dict()
+	# 		score_training[r[0]] = dict()
+	# 		score_validate[r[0]] = dict()
+	# 		t_training[r[0]] = dict()
+	# 		t_validate[r[0]] = dict()
+	# 	else:
+	# 		if r[1] not in score_training[r[0]]:
+	# 			score_training[r[0]][r[1]] = dict()
+	# 			score_validate[r[0]][r[1]] = dict()
+	# 			t_training[r[0]][r[1]] = dict()
+	# 			t_validate[r[0]][r[1]] = dict()
+	# 		else:
+	# 			if r[2] not in score_training[r[0]][r[1]]:
+	# 				score_training[r[0]][r[1]][r[2]] = []
+	# 				score_validate[r[0]][r[1]][r[2]] = []
+	# 				t_training[r[0]][r[1]][r[2]] = []
+	# 				t_validate[r[0]][r[1]][r[2]] = []
+	# 			else:
+	# 				score_training[r[0]][r[1]][r[2]].append(r[4])
+	# 				score_validate[r[0]][r[1]][r[2]].append(r[5])
+	# 				t_training[r[0]][r[1]][r[2]].append(r[6])
+	# 				t_validate[r[0]][r[1]][r[2]].append(r[7])
+	#
+	# # Plot max_df evolution
+	# for w_ct in score_training:
+	# 	for w_pd in score_training[w_ct]:
+	# 		st_d = score_training[w_ct][w_pd]
+	# 		sv_d = score_validate[w_ct][w_pd]
+	# 		tt_d = t_training[w_ct][w_pd]
+	# 		st_k = sorted(st_d.iterkeys())
+	# 		x = [w_au for w_au in st_k]
+	#
+	# 		st = [np.mean(st_d[w_au]) for w_au in st_k]
+	# 		st_err = [np.std(st_d[w_au]) for w_au in st_k]
+	# 		sv = [np.mean(sv_d[w_au]) for w_au in st_k]
+	# 		sv_err = [np.std(sv_d[w_au]) for w_au in st_k]
+	# 		tt = [np.mean(tt_d[w_au]) for w_au in st_k]
+	# 		tt_err = [np.std(tt_d[w_au]) for w_au in st_k]
+	#
+	# 		fig, ax1 = plt.subplots()
+	# 		ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
+	# 		ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
+	# 		ax1.set_xlabel('Threshold ratio for the lower ngram')
+	# 		ax1.set_ylabel('Score')
+	# 		ax1.tick_params('y', color=utils.get_style_colors()[0])
+	# 		ax2 = ax1.twinx()
+	# 		ax2.errorbar(x, tt, tt_err, color=utils.get_style_colors()[2], linewidth=1.5)
+	# 		ax2.set_ylabel('Training time (s)', color=utils.get_style_colors()[2])
+	# 		ax2.tick_params('y', colors=utils.get_style_colors()[2])
+	# 		ax2.grid(b=False)
+	#
+	# 		fig.tight_layout()
+	# 		plt.savefig(DEFAULT_CV_LOCATION + "/cv_wau_" + str(w_ct) + "_" + str(w_pd) + ".png", format='png', dpi=300)
+	# 		plt.close()
+
+	argmin = np.argmin(np.array([r[5] for r in results]))
+	print results[argmin]
 
 
 if __name__ == '__main__':
@@ -301,5 +375,7 @@ if __name__ == '__main__':
 		parallel_ct_pd_au()
 	elif args[1] == "plot_ct":
 		plot_ct(args[2])
+	elif args[1] == "plot_ct_pd_au":
+		plot_ct_pd_au(args[2])
 	else:
 		print "Option does not exist. Please, check the feature_selection.py file"

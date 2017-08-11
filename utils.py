@@ -1,5 +1,8 @@
 """Module containing utility functions."""
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import os
@@ -11,8 +14,6 @@ try:
 except:
 	print "Warning: Couldn't import cPickle, using native pickle instead."
 	import pickle
-
-matplotlib.use("Agg")
 
 
 ## Disk access function ##
@@ -95,8 +96,26 @@ def to_percent(y, position):
 
 ## Mathematical operation functions ##
 
+
 def lp_filter(array, window):
 
 	averageArr = np.convolve(array, np.ones((window,))/window, mode='valid')
 
 	return averageArr
+
+## Matplotlib functions ##
+
+plt.style.use('fivethirtyeight')
+
+
+def get_style_colors():
+	""" Return a arry with the current style colors """
+
+	if 'axes.prop_cycle' in plt.rcParams:
+		cols = plt.rcParams['axes.prop_cycle']
+		col_list = []
+		for v in cols:
+			col_list.append(v["color"])
+	else:
+		col_list = ['b', 'r', 'y', 'g', 'k']
+	return col_list
