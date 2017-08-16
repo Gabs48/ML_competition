@@ -265,7 +265,7 @@ def parallel_reduction(method="svd", filename=None):
 
 	# Create the parameters for a cross-validation experiment
 	parameters = []
-	for k in np.logspace(1, 4, num=20):
+	for k in np.logspace(2.5, 7.5, num=20):
 		for seed in [random.randint(0, 1000) for i in xrange(4)]:
 			parameters.append((method, int(k), seed, filename))
 
@@ -463,7 +463,7 @@ def plot_reduction(filename):
 	t_training = dict()
 	score_validate = dict()
 	t_validate = dict()
-	method = "None"
+	method = results[0][6] if len(results[0]) > 6 else "None"
 
 	for r in results:
 		if r[0] not in score_training:
@@ -471,7 +471,6 @@ def plot_reduction(filename):
 			score_validate[r[0]] = [r[3]]
 			t_training[r[0]] = [r[4]]
 			t_validate[r[0]] = [r[5]]
-			method = r[6]
 		else:
 			score_training[r[0]].append(r[2])
 			score_validate[r[0]].append(r[3])
@@ -504,7 +503,7 @@ def plot_reduction(filename):
 
 	plt.xscale('log')
 	fig.tight_layout()
-	plt.savefig(DEFAULT_CV_LOCATION + "/cv_" + str(method) + "_" + str(k) + ".png", format='png', dpi=300)
+	plt.savefig(DEFAULT_CV_LOCATION + "/cv_" + str(method) + ".png", format='png', dpi=300)
 	plt.close()
 
 
