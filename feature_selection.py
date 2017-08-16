@@ -14,6 +14,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import SparsePCA, TruncatedSVD
+from sklearn.feature_selection import SelectKBest, chi2
 import sys
 import time
 
@@ -32,13 +33,14 @@ dataset = data.load_pickled_data()
 class KeyboardInterruptError(Exception): pass
 
 
-def perform_svd_exp(params):
+def perform_reduction_exp(params):
 
 	try:
 		# Set cross-validation parameters
-		k = params[0]
-		seed = params[1]
-		filename = params[2]
+		method = params[0]
+		k = params[1]
+		seed = params[2]
+		filename = params[3]
 
 		# Set the model
 		training_set, validate_set = train_test_split(dataset["train"],
@@ -48,7 +50,13 @@ def perform_svd_exp(params):
 		target_validate = train.create_target(validate_set)
 
 		ft_extractor = create_ft_ct()
-		ft_reductor = TruncatedSVD(k)
+		if method == "svd":
+			ft_reductor = TruncatedSVD(k)
+		elif method == "kbest":
+			ft_reductor = SelectKBest(chi2, k)
+		else:
+			print "Method does not exist"
+			exit()
 		classifier = LogisticRegression()
 
 		pipe = Pipeline([('ft_extractor', ft_extractor), ('ft_reductor', ft_reductor),
@@ -67,7 +75,7 @@ def perform_svd_exp(params):
 		score_training = train.loss_fct(target_training, pred_training)
 		score_validate = train.loss_fct(target_validate, pred_validate)
 
-		cv_res = (k, seed, score_training, score_validate, t_training, t_validate)
+		cv_res = (k, seed, score_training, score_validate, t_training, t_validate, method)
 
 		with writing_mutex:
 			if os.path.exists(filename):
@@ -245,11 +253,12 @@ def parallel_ct_pd_au(filename=None):
 		pool.join()
 
 
-def parallel_svd(filename=None):
+def parallel_reduction(method="svd", filename=None):
 
 	cv_res = []
 	if filename is None:
-		filename = os.path.join(DEFAULT_CV_LOCATION, "cross_validation_svd_ct_" + utils.timestamp() + ".pkl")
+		filename = os.path.join(DEFAULT_CV_LOCATION, "cross_validation_" +
+								str(method) + "_ct_" + utils.timestamp() + ".pkl")
 
 	# Create a pool of processes
 	pool = Pool(N_PROCESS)
@@ -258,11 +267,11 @@ def parallel_svd(filename=None):
 	parameters = []
 	for k in np.logspace(1, 4, num=20):
 		for seed in [random.randint(0, 1000) for i in xrange(4)]:
-			parameters.append((int(k), seed, filename))
+			parameters.append((method, int(k), seed, filename))
 
 	# Execute pool of processes
 	try:
-		cv_res = pool.map(perform_svd_exp, parameters)
+		cv_res = pool.map(perform_reduction_exp, parameters)
 		utils.dump_pickle(cv_res, filename)
 		pool.close()
 	except KeyboardInterrupt:
@@ -445,6 +454,60 @@ def plot_ct_pd_au(filename):
 	print results[argmin]
 
 
+def plot_reduction(filename):
+
+	results = utils.load_pickle(filename)
+
+	# Transcript results
+	score_training = dict()
+	t_training = dict()
+	score_validate = dict()
+	t_validate = dict()
+	method = "None"
+
+	for r in results:
+		if r[0] not in score_training:
+			score_training[r[0]] = [r[2]]
+			score_validate[r[0]] = [r[3]]
+			t_training[r[0]] = [r[4]]
+			t_validate[r[0]] = [r[5]]
+			method = r[6]
+		else:
+			score_training[r[0]].append(r[2])
+			score_validate[r[0]].append(r[3])
+			t_training[r[0]].append(r[4])
+			t_validate[r[0]].append(r[5])
+
+	# Plot max_df evolution
+	k_keys = sorted(score_training.iterkeys())
+	print k_keys
+	x = [k for k in k_keys]
+	st = [np.mean(score_training[k]) for k in k_keys]
+	st_err = [np.std(score_training[k]) for k in k_keys]
+	sv = [np.mean(score_validate[k]) for k in k_keys]
+	sv_err = [np.std(score_validate[k]) for k in k_keys]
+	tt = [np.mean(t_training[k]) for k in k_keys]
+	tt_err = [np.std(t_training[k]) for k in k_keys]
+
+	fig, ax1 = plt.subplots()
+	ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
+	ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
+	ax1.set_xlabel('Number of eigenvalues kept in ' + str(method))
+	ax1.set_ylabel('Score')
+	ax1.tick_params('y', color=utils.get_style_colors()[0])
+
+	ax2 = ax1.twinx()
+	ax2.errorbar(x, tt, tt_err, color=utils.get_style_colors()[2], linewidth=1.5)
+	ax2.set_ylabel('Training time (s)', color=utils.get_style_colors()[2])
+	ax2.tick_params('y', colors=utils.get_style_colors()[2])
+	ax2.grid(b=False)
+
+	plt.xscale('log')
+	fig.tight_layout()
+	plt.savefig(DEFAULT_CV_LOCATION + "/cv_" + str(method) + "_" + str(k) + ".png", format='png', dpi=300)
+	plt.close()
+
+
 if __name__ == '__main__':
 
 	args = sys.argv
@@ -453,11 +516,13 @@ if __name__ == '__main__':
 		parallel_ct()
 	elif args[1] == "ct_pd_au":
 		parallel_ct_pd_au()
-	elif args[1] == "svd":
-		parallel_svd()
+	elif args[1] == "reduce":
+		parallel_reduction(method=args[2])
 	elif args[1] == "plot_ct":
 		plot_ct(args[2])
 	elif args[1] == "plot_ct_pd_au":
 		plot_ct_pd_au(args[2])
+	elif args[1] == "plot_reduce":
+		plot_reduction(args[2])
 	else:
 		print "Option does not exist. Please, check the feature_selection.py file"
