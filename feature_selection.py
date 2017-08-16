@@ -13,6 +13,7 @@ import random
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import SparsePCA, TruncatedSVD
 import sys
 import time
 
@@ -29,6 +30,55 @@ dataset = data.load_pickled_data()
 
 
 class KeyboardInterruptError(Exception): pass
+
+
+def perform_svd_exp(params):
+
+	try:
+		# Set cross-validation parameters
+		k = params[0]
+		seed = params[1]
+		filename = params[2]
+
+		# Set the model
+		training_set, validate_set = train_test_split(dataset["train"],
+			test_size=VALIDATE_PART, random_state=seed)
+		training_set = training_set
+		target_training = train.create_target(training_set)
+		target_validate = train.create_target(validate_set)
+
+		ft_extractor = create_ft_ct()
+		ft_reductor = TruncatedSVD(k)
+		classifier = LogisticRegression()
+
+		pipe = Pipeline([('ft_extractor', ft_extractor), ('ft_reductor', ft_reductor),
+						('classifier', classifier)])
+
+		# Train and validate the model
+		t_in = time.time()
+		pipe.fit_transform(training_set, target_training)
+		t_training = time.time() - t_in
+		pred_training = pipe.predict(training_set)
+		t_in = time.time()
+		pred_validate = pipe.predict(validate_set)
+		t_validate = time.time() - t_in
+
+		# Compute scores
+		score_training = train.loss_fct(target_training, pred_training)
+		score_validate = train.loss_fct(target_validate, pred_validate)
+
+		cv_res = (k, seed, score_training, score_validate, t_training, t_validate)
+
+		with writing_mutex:
+			if os.path.exists(filename):
+				cv_old_res = utils.load_pickle(filename)
+				cv_old_res.append(cv_res)
+				utils.dump_pickle(cv_old_res, filename)
+			else:
+				utils.dump_pickle([cv_res], filename)
+
+	except KeyboardInterrupt:
+		raise KeyboardInterruptError()
 
 
 def perform_ct_exp(params):
@@ -183,6 +233,36 @@ def parallel_ct_pd_au(filename=None):
 	# Execute pool of processes
 	try:
 		cv_res = pool.map(perform_ct_pd_au_exp, parameters)
+		utils.dump_pickle(cv_res, filename)
+		pool.close()
+	except KeyboardInterrupt:
+		print("Caught KeyboardInterrupt, terminating workers")
+		pool.terminate()
+	except Exception, e:
+		print("Caught exception %r, terminating workers" % (e,))
+		pool.terminate()
+	finally:
+		pool.join()
+
+
+def parallel_svd(filename=None):
+
+	cv_res = []
+	if filename is None:
+		filename = os.path.join(DEFAULT_CV_LOCATION, "cross_validation_svd_ct_" + utils.timestamp() + ".pkl")
+
+	# Create a pool of processes
+	pool = Pool(N_PROCESS)
+
+	# Create the parameters for a cross-validation experiment
+	parameters = []
+	for k in np.logspace(1, 4, num=20):
+		for seed in [random.randint(0, 1000) for i in xrange(4)]:
+			parameters.append((int(k), seed, filename))
+
+	# Execute pool of processes
+	try:
+		cv_res = pool.map(perform_svd_exp, parameters)
 		utils.dump_pickle(cv_res, filename)
 		pool.close()
 	except KeyboardInterrupt:
@@ -373,6 +453,8 @@ if __name__ == '__main__':
 		parallel_ct()
 	elif args[1] == "ct_pd_au":
 		parallel_ct_pd_au()
+	elif args[1] == "svd":
+		parallel_svd()
 	elif args[1] == "plot_ct":
 		plot_ct(args[2])
 	elif args[1] == "plot_ct_pd_au":

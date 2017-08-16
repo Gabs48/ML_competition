@@ -3,6 +3,14 @@ Data/*
 Predictions/*
 Features/*
 Models/*
+FeatureSelection/*
+Analysis/*
+
+# Pycharm files
+.idea/*
 
 # Ignore python compiled files
 *.pyc
+
+# Unpublished report
+report.md

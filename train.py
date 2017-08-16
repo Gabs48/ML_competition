@@ -1,13 +1,17 @@
 """ Script that transform the content of train in sklearn boolean features """
 
+from features import *
 import data
 import utils
 
 import numpy as np
 import os
 from sklearn.model_selection import *
-from sklearn.linear_model import LogisticRegression, Ridge, Lasso, ElasticNet
-from sklearn.linear_model import OrthogonalMatchingPursuit, BayesianRidge, ARDRegression
+from sklearn.decomposition import TruncatedSVD, SparsePCA, PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression, Perceptron, RidgeClassifier
 import sys
 
 DEFAULT_MODEL_LOCATION = 'Models'
@@ -52,19 +56,18 @@ def test_linear_classifiers():
 
 	ft_extractor = utils.load_pickle(DEFAULT_FT_MODEL_PATH)
 	training_ft = ft_extractor.transform(training_set)
-	validate_ft = ft_extractor.transform(training_set)
+	validate_ft = ft_extractor.transform(validate_set)
 
 	# Declare classifiers
-	names = ["Logistic Regression", "Ridge", "Lasso", "ElasticNet",
-		"BayesianRidge", "ARDRegression"]
+	names = ["Linear Discriminant Analysis", "Logistic Regression", "Multinomial Naive Bayes",
+			"Linear Support Vector Classifier", "Perceptron", "Ridge Classifier"]
 	classifiers = [
+		LinearDiscriminantAnalysis(),
 		LogisticRegression(),
-		Ridge(),
-		Lasso(),
-		ElasticNet(),
-		OrthogonalMatchingPursuit(),
-		BayesianRidge(),
-		ARDRegression()]
+		MultinomialNB(),
+		LinearSVC(),
+		Perceptron(),
+		RidgeClassifier()]
 	training_scores = []
 	validate_scores = []
 
@@ -73,9 +76,10 @@ def test_linear_classifiers():
 
 		# Train classifier
 		print "Training classifier " + name
-		clf.fit(training_ft, training_target)
-		training_predict = clf.predict(training_ft)
-		validate_predict = clf.predict(validate_ft)
+		pipe = Pipeline([("pca", TruncatedSVD(5000)), ("classifier", clf)])
+		pipe.fit(training_ft, training_target)
+		training_predict = pipe.predict(training_ft)
+		validate_predict = pipe.predict(validate_ft)
 		training_scores.append(loss_fct(training_target, training_predict))
 		validate_scores.append(loss_fct(validate_target, validate_predict))
 		print "Scores: " + str(training_scores[-1]) + " " + str(validate_scores[-1])

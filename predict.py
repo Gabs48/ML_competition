@@ -1,60 +1,55 @@
- 
 """Sample script creating some baseline predictions."""
 
+import create_submission
 import data
 import features
 import utils
-import validate
-import lin_predict
-import nonlin_predict
+import train
 
 import os
 import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 import sys
 
 
 LR_PREDICTIONS_BASENAME = os.path.join('Predictions', 'logistic_regression')
 
 
-def save_prd(prd, path=LR_PREDICTIONS_BASENAME):
-	"""
-	Save predictions in a npy file
-	"""
+def save_prd(predictions, path=LR_PREDICTIONS_BASENAME):
 
-	prd_file_name = utils.generate_unqiue_file_name(
-		LR_PREDICTIONS_BASENAME, 'npy')
-	utils.dump_npy(prd, prd_file_name)
-	print 'Dumped predictions to %s' % prd_file_name
+	filename_npy = utils.generate_unqiue_file_name(path, 'npy')
+	filename_csv = utils.generate_unqiue_file_name(path, 'csv')
+
+	utils.dump_npy(predictions, filename_npy)
+	create_submission.write_predictions_to_csv(predictions, filename_csv)
 
 
-def _parse_args(args):
-	"""
-	Parse argument for test prediction
-	"""
+def main():
 
-	if not len(args) in (2, 3):
-		print ('Usage: python2 predict.py <path_to_ft_model.plk> <path_to_train_model.pkl> ')
-		return
-
-	ft_mdl_path = sys.argv[1]
-	lr_mdl_path = sys.argv[2] if len(sys.argv) == 3 else validate.DEFAULT_MODEL_PATH
-	
-	return ft_mdl_path, lr_mdl_path
-
-
-def main(ft_mdl_path, lr_mdl_path):
+	print 'Load the data'
 	dataset = data.load_pickled_data()
-	test_data = dataset['test']
+	train_set = dataset['train']
+	test_set = dataset['test']
+	print "Train and Test sets lengths: " + str(len(train_set)) + " " + str(len(test_set))
+	train_target = train.create_target(train_set)
 
-	# Predict
-	prd = predict_lr(test_data, ft_mdl_path, lr_mdl_path)
+	# Model
+	ft_extractor = features.create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0001, w_ct=1, w_pd=1, w_au=1)
+	classifier = LogisticRegression()
+	pipe = Pipeline([('ft_extractor', ft_extractor), ('classifier', classifier)])
 
-	# Save predictions
-	save_prd(prd)
-	
+	# Train the model
+	print "Train the model"
+	pipe.fit_transform(train_set, train_target)
+
+	# Predict the test set and save
+	print 'Save predictions'
+	predictions = pipe.predict(test_set)
+	save_prd(predictions)
+
 
 if __name__ == '__main__':
+
 	args = sys.argv
-	arguments = _parse_args(args)
-	if arguments:
-		main(*arguments)
+	main()
