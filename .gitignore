@@ -5,6 +5,7 @@ Features/*
 Models/*
 FeatureSelection/*
 Analysis/*
+Train/*
 
 # Pycharm files
 .idea/*
