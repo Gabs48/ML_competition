@@ -272,7 +272,7 @@ def parallel_reduction(method="svd", filename=None):
 	# Execute pool of processes
 	try:
 		cv_res = pool.map(perform_reduction_exp, parameters)
-		utils.dump_pickle(cv_res, filename)
+		#utils.dump_pickle(cv_res, filename)
 		pool.close()
 	except KeyboardInterrupt:
 		print("Caught KeyboardInterrupt, terminating workers")

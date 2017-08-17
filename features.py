@@ -66,7 +66,7 @@ class ItemSelector(BaseEstimator, TransformerMixin):
 			return
 
 
-def create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0001, w_ct=1, w_pd=1, w_au=1):
+def create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0003, w_ct=1, w_pd=1, w_au=1):
 	"""
 	Create a feature extraction pipe given different hyper parameters and return it
 	"""
@@ -97,7 +97,7 @@ def create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0001, w_ct=1, w_pd=1, w_au=
 	return Pipeline([('ft_extractor', FeatureUnion(transformer_list=tl, transformer_weights=tw))])
 
 
-def create_ft_ct(ngram=4, max_df=0.2, min_df=0.001):
+def create_ft_ct(ngram=3, max_df=0.3, min_df=0.0003):
 	"""
 	Create a feature extraction pipe using the review content only and return it
 	"""
