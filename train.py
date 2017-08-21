@@ -13,11 +13,15 @@ from pprint import pprint
 
 from sklearn.decomposition import TruncatedSVD, SparsePCA, PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import *
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression, Perceptron, RidgeClassifier
+from scipy import sparse
+from scipy import stats
 import sys
 
 # Configuration
@@ -56,27 +60,65 @@ def create_target(dataset):
 	return np.array(target)
 
 
-def optimize_classifier(clf='logistic_regression'):
+def add_sparse_noise(x, n=0.01):
+
+	rvs = stats.norm().rvs
+	noise = n * sparse.random(x.shape[0], x.shape[1], density=0.01, data_rvs=rvs)
+	return x + noise
+
+
+def grid_search(clf='lr'):
 
 	# Get the data
 	print "Load data"
-	dataset = data.load_pickled_data()["train"]
+	dataset = data.load_pickled_data()["train"][0:200]
 	target = create_target(dataset)
 
 	# Create the pipe
-	ft_extractor = create_ft_ct_pd_au()
-	if clf == "logistic_regression":
+	if clf == "lr":
+		ft_extractor = create_ft_ct()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
 		parameters = {'clf__C': np.logspace(-2, 2, num=15).tolist()}
-		filename = DEFAULT_TRAIN_LOCATION + "/cv_logistic_regression_" + utils.timestamp() + ".pkl"
+		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
+		filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_" + utils.timestamp() + ".pkl"
+	if clf == "lr_all":
+		ft_extractor = create_ft_ct_pd_au()
+		classifier = LogisticRegression(verbose=0, penalty='l2')
+		parameters = {'clf__C': np.logspace(-2, 2, num=15).tolist()}
+		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
+		filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_all_" + utils.timestamp() + ".pkl"
+	elif clf == "lr_all_svd":
+		ft_extractor = create_ft_ct()
+		ft_reductor = TruncatedSVD()
+		classifier = LogisticRegression(verbose=0, penalty='l2')
+		parameters = {'clf__C': np.logspace(-2, 2, num=5).tolist(),
+					'ft_red__n_components': np.logspace(1, 5, num=5).astype(int).tolist()}
+		pipe = Pipeline([('ft', ft_extractor), ('ft_red', ft_reductor), ('clf', classifier)])
+		filename = DEFAULT_TRAIN_LOCATION + "/lr_all_svd_" + utils.timestamp() + ".pkl"
+	elif clf == "lr_mixed_svd":
+		ft_extractor = create_ft_ctsvd_pd_au()
+		classifier = LogisticRegression(verbose=0, penalty='l2')
+		parameters = {'clf__C': np.logspace(-2, 2, num=5).tolist(),
+					'ft__ft_extractor__content__reductor__n_components': np.logspace(1, 5, num=5).astype(int).tolist()}
+		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
+		filename = DEFAULT_TRAIN_LOCATION + "/lr_mixed_svd_" + utils.timestamp() + ".pkl"
+	elif clf == "rf_all":
+		ft_extractor = create_ft_ctsvd_pd_au()
+		classifier = RandomForestClassifier()
+		parameters = {'clf__max_depth': np.logspace(0, 4, num=5).tolist(),
+					'ft__ft_extractor__content__reductor__n_components': np.logspace(1, 5, num=5).astype(
+					int).tolist()}
+		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
+		filename = DEFAULT_TRAIN_LOCATION + "/lr_rf_all_" + utils.timestamp() + ".pkl"
 	else:
+		ft_extractor = create_ft_ct()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
 		parameters = {'clf__C': np.logspace(-2, 2, num=15).tolist()}
 		filename = DEFAULT_TRAIN_LOCATION + "/cv_logistic_regression_" + utils.timestamp() + ".pkl"
-
-	pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
+		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
 
 	# Create the cross-validation search method
+	# print pipe.get_params().keys()
 	loss = make_scorer(loss_fct, greater_is_better=False)
 	grid_search = GridSearchCV(pipe, parameters, n_jobs=N_PROCESS, verbose=2, scoring=loss)
 
@@ -85,12 +127,26 @@ def optimize_classifier(clf='logistic_regression'):
 	print "    Pipeline:", [name for name, _ in pipe.steps]
 	print "    Parameters: ",
 	pprint(parameters)
+	print ""
 	grid_search.fit(dataset, target)
 
 	# Save the results
 	r = grid_search.cv_results_
-	results = (r['param_clf__C'], -r['mean_train_score'], r['std_train_score'], -r['mean_test_score'],
-			r['std_test_score'], r['mean_fit_time'], r['std_fit_time'], clf)
+	if clf == "lr" or clf == "lr_all":
+		results = (r['param_clf__C'], -r['mean_train_score'], r['std_train_score'], -r['mean_test_score'],
+				r['std_test_score'], r['mean_fit_time'], r['std_fit_time'], clf)
+	elif clf == "lr_all_svd":
+		results = (r['param_clf__C'], r['param_ft_red__n_components'], -r['mean_train_score'], r['std_train_score'], -r['mean_test_score'],
+				r['std_test_score'], r['mean_fit_time'], r['std_fit_time'], clf)
+	elif clf == "lr_mixed_svd":
+		results = (r['param_clf__C'], r['param_ft__ft_extractor__content__reductor__n_components'], -r['mean_train_score'], r['std_train_score'], -r['mean_test_score'],
+				r['std_test_score'], r['mean_fit_time'], r['std_fit_time'], clf)
+	elif clf == "rf" or clf == "rf_all":
+		results = (r['param_clf__max_depth'], -r['mean_train_score'], r['std_train_score'], -r['mean_test_score'],
+				r['std_test_score'], r['mean_fit_time'], r['std_fit_time'], clf)
+	else:
+		results = (r['param_clf__C'], -r['mean_train_score'], r['std_train_score'], -r['mean_test_score'],
+				r['std_test_score'], r['mean_fit_time'], r['std_fit_time'], clf)
 	utils.dump_pickle(results, filename)
 
 	# Print the best individual
@@ -117,7 +173,11 @@ def plot_optimization(filename):
 	fig, ax1 = plt.subplots()
 	ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
 	ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
-	if method == "logistic_regression":
+	if method == "lr":
+		ax1.set_xlabel('Evolution of regularization parameter C')
+	elif method == "lda":
+		ax1.set_xlabel('Evolution of shrinkage parameter')
+	else:
 		ax1.set_xlabel('Evolution of regularization parameter C')
 	ax1.set_ylabel('Score')
 	ax1.tick_params('y', color=utils.get_style_colors()[0])
@@ -167,7 +227,7 @@ def test_linear_classifiers():
 
 		# Train classifier
 		print "Training classifier " + name
-		pipe = Pipeline([("pca", TruncatedSVD(5000)), ("classifier", clf)])
+		pipe = Pipeline([("classifier", clf)])
 		pipe.fit(training_ft, training_target)
 		training_predict = pipe.predict(training_ft)
 		validate_predict = pipe.predict(validate_ft)
@@ -182,8 +242,11 @@ if __name__ == '__main__':
 
 	if args[1] == "test":
 		test_linear_classifiers()
-	elif args[1] == "opt":
-		optimize_classifier()
+	elif args[1] == "gd":
+		if len(args) > 2:
+			grid_search(args[2])
+		else:
+			grid_search()
 	elif args[1] == "plot":
 		plot_optimization(args[2])
 	else:

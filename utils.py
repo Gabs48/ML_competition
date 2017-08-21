@@ -94,6 +94,7 @@ def to_percent(y, position):
 	else:
 		return s + '%'
 
+
 ## Mathematical operation functions ##
 
 

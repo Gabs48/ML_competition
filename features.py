@@ -7,6 +7,7 @@ import train
 
 import os
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction import text, DictVectorizer
 from sklearn.model_selection import *
 from sklearn.pipeline import FeatureUnion, Pipeline
@@ -90,6 +91,38 @@ def create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0003, w_ct=1, w_pd=1, w_au=
 						('author', Pipeline([
 								('selector_au', ItemSelector(key='author', typ="dict")),
 								('author_ft', author_fct),
+								]))
+						]
+	tw = {'content': w_ct, 'product': w_pd, 'author': w_au}
+
+	return Pipeline([('ft_extractor', FeatureUnion(transformer_list=tl, transformer_weights=tw))])
+
+
+def create_ft_ctsvd_pd_au(ngram=3, k=10000, max_df=0.3, min_df=0.0003, w_ct=1, w_pd=1, w_au=1):
+	"""
+	Create a feature extraction pipe given different hyper parameters and return it
+	"""
+
+	# Declare estimators
+	stop_words = text.ENGLISH_STOP_WORDS.union(["s", "t", "2", "m", "ve"])
+	content_fct = text.TfidfVectorizer(tokenizer=analyze.get_text_ngram, ngram_range=(1, ngram),
+		min_df=min_df, max_df=max_df, stop_words=stop_words)
+	product_fct = DictVectorizer()
+	author_fct = DictVectorizer()
+
+	# Create features pipe
+	tl = [('content', Pipeline([
+								('selector_ct', ItemSelector(key='content')),
+								('ft', content_fct),
+								('reductor', TruncatedSVD(n_components=int(k))),
+								])),
+						('product', Pipeline([
+								('selector_pd', ItemSelector(key='product', typ="dict")),
+								('ft', product_fct),
+								])),
+						('author', Pipeline([
+								('selector_au', ItemSelector(key='author', typ="dict")),
+								('ft', author_fct),
 								]))
 						]
 	tw = {'content': w_ct, 'product': w_pd, 'author': w_au}
