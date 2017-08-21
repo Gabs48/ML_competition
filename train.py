@@ -81,7 +81,7 @@ def grid_search(clf='lr'):
 		parameters = {'clf__C': np.logspace(-2, 2, num=15).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
 		filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_" + utils.timestamp() + ".pkl"
-	if clf == "lr_all":
+	elif clf == "lr_all":
 		ft_extractor = create_ft_ct_pd_au()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
 		parameters = {'clf__C': np.logspace(-2, 2, num=15).tolist()}
