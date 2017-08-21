@@ -71,7 +71,7 @@ def grid_search(clf='lr'):
 
 	# Get the data
 	print "Load data"
-	dataset = data.load_pickled_data()["train"][0:200]
+	dataset = data.load_pickled_data()["train"]
 	target = create_target(dataset)
 
 	# Create the pipe
