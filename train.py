@@ -106,7 +106,7 @@ def grid_search(clf='lr'):
 		ft_extractor = create_ft_ctsvd_pd_au()
 		classifier = RandomForestClassifier()
 		parameters = {'clf__max_depth': np.logspace(0, 4, num=5).tolist(),
-					'ft__ft_extractor__content__reductor__n_components': np.logspace(1, 5, num=5).astype(
+					'ft__ft_extractor__content__reductor__n_components': np.logspace(1, 4, num=4).astype(
 					int).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
 		filename = DEFAULT_TRAIN_LOCATION + "/lr_rf_all_" + utils.timestamp() + ".pkl"
