@@ -242,7 +242,7 @@ if __name__ == '__main__':
 
 	if args[1] == "test":
 		test_linear_classifiers()
-	elif args[1] == "gd":
+	elif args[1] == "gs":
 		if len(args) > 2:
 			grid_search(args[2])
 		else:
