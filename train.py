@@ -92,21 +92,21 @@ def grid_search(clf='lr'):
 		ft_reductor = TruncatedSVD()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
 		parameters = {'clf__C': np.logspace(-2, 2, num=5).tolist(),
-					'ft_red__n_components': np.logspace(1, 4.2, num=5).astype(int).tolist()}
+					'ft_red__n_components': np.logspace(3.7, 1, num=5).astype(int).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('ft_red', ft_reductor), ('clf', classifier)])
 		filename = DEFAULT_TRAIN_LOCATION + "/lr_all_svd_" + utils.timestamp() + ".pkl"
 	elif clf == "lr_mixed_svd":
 		ft_extractor = create_ft_ctsvd_pd_au()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
 		parameters = {'clf__C': np.logspace(-2, 2, num=5).tolist(),
-					'ft__ft_extractor__content__reductor__n_components': np.logspace(1, 4.2, num=5).astype(int).tolist()}
+					'ft__ft_extractor__content__reductor__n_components': np.logspace(3.7, 1, num=5).astype(int).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
 		filename = DEFAULT_TRAIN_LOCATION + "/lr_mixed_svd_" + utils.timestamp() + ".pkl"
 	elif clf == "rf_all":
 		ft_extractor = create_ft_ctsvd_pd_au()
 		classifier = RandomForestClassifier()
 		parameters = {'clf__max_depth': np.logspace(0, 4, num=5).tolist(),
-					'ft__ft_extractor__content__reductor__n_components': np.logspace(1, 4, num=4).astype(
+					'ft__ft_extractor__content__reductor__n_components': np.logspace(3.7, 1, num=5).astype(
 					int).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
 		filename = DEFAULT_TRAIN_LOCATION + "/lr_rf_all_" + utils.timestamp() + ".pkl"
