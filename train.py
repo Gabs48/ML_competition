@@ -120,7 +120,7 @@ def grid_search(clf='lr'):
 	# Create the cross-validation search method
 	# print pipe.get_params().keys()
 	loss = make_scorer(loss_fct, greater_is_better=False)
-	grid_search = GridSearchCV(pipe, parameters, n_jobs=N_PROCESS, verbose=2, scoring=loss)
+	gs = GridSearchCV(pipe, parameters, n_jobs=N_PROCESS, verbose=2, scoring=loss)
 
 	# Run the cross-validation
 	print "\nPerforming grid search..."
@@ -128,10 +128,10 @@ def grid_search(clf='lr'):
 	print "    Parameters: ",
 	pprint(parameters)
 	print ""
-	grid_search.fit(dataset, target)
+	gs.fit(dataset, target)
 
 	# Save the results
-	r = grid_search.cv_results_
+	r = gs.cv_results_
 	if clf == "lr" or clf == "lr_all":
 		results = (r['param_clf__C'], -r['mean_train_score'], r['std_train_score'], -r['mean_test_score'],
 				r['std_test_score'], r['mean_fit_time'], r['std_fit_time'], clf)
@@ -150,9 +150,9 @@ def grid_search(clf='lr'):
 	utils.dump_pickle(results, filename)
 
 	# Print the best individual
-	print "\nBest score: %0.3f" % -grid_search.best_score_
+	print "\nBest score: %0.3f" % -gs.best_score_
 	print "    Best parameters set:"
-	best_parameters = grid_search.best_estimator_.get_params()
+	best_parameters = gs.best_estimator_.get_params()
 	for param_name in sorted(parameters.keys()):
 		print("\t%s: %r" % (param_name, best_parameters[param_name]))
 

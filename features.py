@@ -142,21 +142,27 @@ def create_ft_ct(ngram=3, max_df=0.3, min_df=0.0003):
 	return Pipeline(([('selector_ct', ItemSelector(key='content')),	('content_ft', content_fct)]))
 
 
-def save_ft(ft, model, location=DEFAULT_FT_LOCATION):
+def save_ft(ft, target, filename=None):
 	"""
 	Save the features
 	"""
 
 	ts = utils.timestamp()
-	filename = os.path.join(location, "ft_" + \
-		ts + ".pkl")
-	utils.dump_pickle(ft, filename)
-
-	filename = os.path.join(location, "ft_model_" + \
-		ts + ".pkl")
-	utils.dump_pickle(model, filename)
+	if filename is None:
+		filename = os.path.join(DEFAULT_FT_LOCATION, "ft_" + ts + ".pkl")
+	utils.dump_pickle((ft, target), filename)
 
 	return filename
+
+
+def load_ft(filename):
+	"""
+	Load the features
+	"""
+
+	(ft, target) = utils.load_pickle(filename)
+
+	return ft, target
 
 
 def test_ft_lin_class(ft_type):
