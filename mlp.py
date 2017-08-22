@@ -107,14 +107,13 @@ def grid_search():
 
     # 4. Save the results
     print "4. Save and plot scores"
-    r = gs.cv_results_
-    utils.dump_pickle(r, DEFAULT_TRAIN_LOCATION + "/cv_mlp_" + utils.timestamp() + ".pkl")
-
     print "\nBest score: %0.3f" % -gs.best_score_
     print "Best parameters set:"
     best_parameters = gs.best_estimator_.get_params()
     for param_name in sorted(parameters.keys()):
         print("\t%s: %r" % (param_name, best_parameters[param_name]))
+    r = gs.cv_results_
+    utils.dump_pickle(r, DEFAULT_TRAIN_LOCATION + "/cv_mlp_" + utils.timestamp() + ".pkl")
 
 
 if __name__ == '__main__':
