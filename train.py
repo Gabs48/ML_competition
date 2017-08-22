@@ -91,17 +91,17 @@ def grid_search(clf='lr'):
 		ft_extractor = create_ft_ct()
 		ft_reductor = TruncatedSVD()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
-		parameters = {'clf__C': np.logspace(-2, 2, num=5).tolist(),
-					'ft_red__n_components': np.logspace(3.7, 1, num=5).astype(int).tolist()}
+		parameters = {'clf__C': np.logspace(-5, 1, num=5).tolist(),
+					'ft_red__n_components': np.logspace(3, 1, num=10).astype(int).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('ft_red', ft_reductor), ('clf', classifier)])
-		filename = DEFAULT_TRAIN_LOCATION + "/lr_all_svd_" + utils.timestamp() + ".pkl"
+		filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_all_svd_" + utils.timestamp() + ".pkl"
 	elif clf == "lr_mixed_svd":
 		ft_extractor = create_ft_ctsvd_pd_au()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
 		parameters = {'clf__C': np.logspace(-2, 2, num=5).tolist(),
 					'ft__ft_extractor__content__reductor__n_components': np.logspace(3.7, 1, num=5).astype(int).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
-		filename = DEFAULT_TRAIN_LOCATION + "/lr_mixed_svd_" + utils.timestamp() + ".pkl"
+		filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_mixed_svd_" + utils.timestamp() + ".pkl"
 	elif clf == "rf_all":
 		ft_extractor = create_ft_ctsvd_pd_au()
 		classifier = RandomForestClassifier()
@@ -109,7 +109,7 @@ def grid_search(clf='lr'):
 					'ft__ft_extractor__content__reductor__n_components': np.logspace(3.7, 1, num=5).astype(
 					int).tolist()}
 		pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
-		filename = DEFAULT_TRAIN_LOCATION + "/lr_rf_all_" + utils.timestamp() + ".pkl"
+		filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_rf_all_" + utils.timestamp() + ".pkl"
 	else:
 		ft_extractor = create_ft_ct()
 		classifier = LogisticRegression(verbose=0, penalty='l2')
@@ -160,39 +160,58 @@ def grid_search(clf='lr'):
 def plot_optimization(filename):
 
 	results = utils.load_pickle(filename)
+	method = results[-1]
+	if method == "lr_all_svd" or method == "lr_mixed_svd" or method == "rf_all":
+		C = np.unique(np.array(results[0]))
+		k = np.unique(np.array(results[1]))
+		st = np.array(results[2]).reshape(len(C), len(k))
+		st_err = np.array(results[3]).reshape(len(C), len(k))
+		sv = np.array(results[4]).reshape(len(C), len(k))
+		sv_err = np.array(results[5]).reshape(len(C), len(k))
 
-	x = np.array(results[0])
-	st = results[1]
-	st_err = results[2]
-	sv = results[3]
-	sv_err = results[4]
-	tt = results[5]
-	tt_err = results[6]
-	method = results[7]
+		print st, results[2]
+		print results[0], C
+		print st[0]
 
-	fig, ax1 = plt.subplots()
-	ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
-	ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
-	if method == "lr":
-		ax1.set_xlabel('Evolution of regularization parameter C')
-	elif method == "lda":
-		ax1.set_xlabel('Evolution of shrinkage parameter')
+		fig, ax1 = plt.subplots()
+
+		for ind, i in enumerate(k):
+			ax1.errorbar(C, sv[ind], sv_err[ind], label='k: ' + str(i))
+		ax1.set_ylabel('Score')
+		ax1.tick_params('y', color=utils.get_style_colors()[0])
+		plt.xscale('log')
+		fig.tight_layout()
+		filename = DEFAULT_TRAIN_LOCATION + "/cv_" + method + ".png"
+		ax1.legend(loc=0)
+		plt.savefig(filename, format='png', dpi=300)
+		plt.close()
+
 	else:
-		ax1.set_xlabel('Evolution of regularization parameter C')
-	ax1.set_ylabel('Score')
-	ax1.tick_params('y', color=utils.get_style_colors()[0])
+		x = np.array(results[0])
+		st = results[1]
+		st_err = results[2]
+		sv = results[3]
+		sv_err = results[4]
+		tt = results[5]
+		tt_err = results[6]
 
-	ax2 = ax1.twinx()
-	ax2.errorbar(x, tt, tt_err, color=utils.get_style_colors()[2], linewidth=1.5)
-	ax2.set_ylabel('Training time (s)', color=utils.get_style_colors()[2])
-	ax2.tick_params('y', colors=utils.get_style_colors()[2])
-	ax2.grid(b=False)
-
-	plt.xscale('log')
-	fig.tight_layout()
-	filename = DEFAULT_TRAIN_LOCATION + "/cv_" + method + ".png"
-	plt.savefig(filename, format='png', dpi=300)
-	plt.close()
+		fig, ax1 = plt.subplots()
+		ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
+		ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
+		if method == "lr":
+			ax1.set_xlabel('Evolution of regularization parameter C')
+		ax1.set_ylabel('Score')
+		ax1.tick_params('y', color=utils.get_style_colors()[0])
+		ax2 = ax1.twinx()
+		ax2.errorbar(x, tt, tt_err, color=utils.get_style_colors()[2], linewidth=1.5)
+		ax2.set_ylabel('Training time (s)', color=utils.get_style_colors()[2])
+		ax2.tick_params('y', colors=utils.get_style_colors()[2])
+		ax2.grid(b=False)
+		plt.xscale('log')
+		fig.tight_layout()
+		filename = DEFAULT_TRAIN_LOCATION + "/cv_" + method + ".png"
+		plt.savefig(filename, format='png', dpi=300)
+		plt.close()
 
 
 def test_linear_classifiers():
