@@ -91,9 +91,9 @@ def grid_search():
     print "2. Create the Neural Network\n"
     batch_size = BATCH_SIZE
     clf = MLPClassifier(alpha=1e-3, hidden_layer_sizes=(50,), batch_size=batch_size, warm_start=True)
-    parameters = {'alpha': np.logspace(-5, 0, num=5).tolist(),
-                  'hidden_layer_sizes': [(i,) for i in [5, 10, 20, 50, 100, 200]],
-                  'batch_size': [50, 100, 200, 500, 1000]}
+    parameters = {'alpha': np.logspace(-5, -1, num=4).tolist(),
+                  'hidden_layer_sizes': [(i,) for i in [10, 20, 50, 100]],
+                  'batch_size': [50, 100, 500, 1000]}
 
     # 3. Create and run the cross-validation search method
     print "3. Perform grid search"
