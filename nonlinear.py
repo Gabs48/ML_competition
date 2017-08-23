@@ -132,7 +132,7 @@ def grid_search():
 
     # 1. Import the features and target
     print "1. Import the features and target\n"
-    test, feature, target = target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft.pkl")
+    test, feature, target = target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
     training_ft, validate_ft, training_target, validate_target = \
         train_test_split(feature, target, test_size=preprocessing.VALIDATE_PART, random_state=preprocessing.SEED)
     print "Training features size: " + str(training_ft.shape) + \
