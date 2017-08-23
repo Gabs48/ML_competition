@@ -25,20 +25,14 @@ def test(predict=False):
     # 1. Import the features and target
     print "1. Import the features and target\n"
     test_ft, train_ft, target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
-    recenter = False
-    dilatation = 1
-    train_ft = train_ft * dilatation
-    test_ft = test_ft * dilatation
-    if recenter:
-        norm_factor = train_ft.data.mean()
-        train_ft.data -= norm_factor
-        test_ft.data -= norm_factor
+
     training_ft, validate_ft, training_target, validate_target = \
         train_test_split(train_ft, target, test_size=preprocessing.VALIDATE_PART, random_state=preprocessing.SEED)
-    print "Training features size: " + str(training_ft.shape) +\
-          " and validation features size: " + str(validate_ft.shape)
-    print "Training target size: " + str(len(training_target)) + \
-          " and validation target size: " + str(len(validate_target)) + "\n"
+    if not predict:
+        print "Training features size: " + str(training_ft.shape) +\
+              " and validation features size: " + str(validate_ft.shape)
+        print "Training target size: " + str(len(training_target)) + \
+              " and validation target size: " + str(len(validate_target)) + "\n"
 
     # 2. Create the NN
     print "2. Create the Neural Network"
@@ -61,8 +55,6 @@ def test(predict=False):
     lab = preprocessing.Float2Labels()
     classes = np.unique(training_target)
     s = "\tProblem: " + str(problem)
-    s += "\n\tRe-centering: " + str(recenter)
-    s += "\n\tData dilatation factor: " + str(dilatation)
     s += "\n\tBatch size: " + str(batch_size)
     s += "\n\tRegularization parameter: " + str(alpha)
     s += "\n\tNetwork layers size: " + str(layers)
@@ -116,12 +108,21 @@ def test(predict=False):
         print "3. Train\n"
         clf = clf.fit(train_ft, target)
 
+        for i in xrange(0, train_ft.shape[0] / batch_size):
+            batch_ft = train_ft[i * batch_size:(i + 1) * batch_size]
+            batch_target = target[i * batch_size:(i + 1) * batch_size]
+
+            if i == 0:
+                clf = clf.partial_fit(batch_ft, batch_target, classes)
+            else:
+                clf = clf.partial_fit(batch_ft, batch_target)
+
         # 4. Predict test results
-        print "4. Predict test results"
+        print "4. Predict and save test results"
         test_pred = lab.transform(clf.predict(test_ft))
         train_pred = lab.transform(clf.predict(train_ft))
-        print "Score on training set: %0.3f" % preprocessing.loss_fct(train_pred, training_target)
-        
+        print "Score on training set: %0.5f" % preprocessing.loss_fct(train_pred, target)
+
         filename = linear.DEFAULT_PRED_LOCATION + "/mlp_" + str(utils.timestamp())
         utils.dump_pickle(test_pred, filename + ".pkl")
         create_submission.write_predictions_to_csv(test_pred, filename + ".csv")
@@ -131,7 +132,7 @@ def grid_search():
 
     # 1. Import the features and target
     print "1. Import the features and target\n"
-    feature, target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft.pkl")
+    test, feature, target =, target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft.pkl")
     training_ft, validate_ft, training_target, validate_target = \
         train_test_split(feature, target, test_size=preprocessing.VALIDATE_PART, random_state=preprocessing.SEED)
     print "Training features size: " + str(training_ft.shape) + \
@@ -143,8 +144,8 @@ def grid_search():
     print "2. Create the Neural Network\n"
     batch_size = BATCH_SIZE
     clf = MLPClassifier(alpha=1e-3, hidden_layer_sizes=(50,), batch_size=batch_size, warm_start=True)
-    parameters = {'alpha': np.logspace(-5, -1, num=5).tolist(),
-                  'hidden_layer_sizes': [(i,) for i in [10, 50, 100, 200, 400]],
+    parameters = {'alpha': np.logspace(-7, -2, num=6).tolist(),
+                  'hidden_layer_sizes': [(i,) for i in [10, 15, 20, 50, 100]],
                   'batch_size': [1000]}
 
     # 3. Create and run the cross-validation search method
