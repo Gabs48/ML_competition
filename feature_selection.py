@@ -1,6 +1,6 @@
 
-from features import *
-import train
+from preprocessing import *
+import linear
 import utils
 
 import matplotlib
@@ -13,7 +13,7 @@ import random
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.decomposition import SparsePCA, TruncatedSVD
+from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_selection import SelectKBest, chi2
 import sys
 import time
@@ -46,8 +46,8 @@ def perform_reduction_exp(params):
 		training_set, validate_set = train_test_split(dataset["train"],
 			test_size=VALIDATE_PART, random_state=seed)
 		training_set = training_set
-		target_training = train.create_target(training_set)
-		target_validate = train.create_target(validate_set)
+		target_training = linear.create_target(training_set)
+		target_validate = linear.create_target(validate_set)
 
 		ft_extractor = create_ft_ct()
 		if method == "svd":
@@ -72,8 +72,8 @@ def perform_reduction_exp(params):
 		t_validate = time.time() - t_in
 
 		# Compute scores
-		score_training = train.loss_fct(target_training, pred_training)
-		score_validate = train.loss_fct(target_validate, pred_validate)
+		score_training = linear.loss_fct(target_training, pred_training)
+		score_validate = linear.loss_fct(target_validate, pred_validate)
 
 		cv_res = (k, seed, score_training, score_validate, t_training, t_validate, method)
 
@@ -103,8 +103,8 @@ def perform_ct_exp(params):
 		training_set, validate_set = train_test_split(dataset["train"],
 			test_size=VALIDATE_PART, random_state=seed)
 		training_set = training_set
-		target_training = train.create_target(training_set)
-		target_validate = train.create_target(validate_set)
+		target_training = linear.create_target(training_set)
+		target_validate = linear.create_target(validate_set)
 
 		ft_extractor = create_ft_ct(ngram=n, min_df=min_df, max_df=max_df)
 		classifier = LogisticRegression(verbose=0)
@@ -120,8 +120,8 @@ def perform_ct_exp(params):
 		t_validate = time.time() - t_in
 
 		# Compute scores
-		score_training = train.loss_fct(target_training, pred_training)
-		score_validate = train.loss_fct(target_validate, pred_validate)
+		score_training = linear.loss_fct(target_training, pred_training)
+		score_validate = linear.loss_fct(target_validate, pred_validate)
 
 		cv_res = (n, min_df, max_df, seed, score_training, score_validate, t_training, t_validate)
 
@@ -153,8 +153,8 @@ def perform_ct_pd_au_exp(params):
 		training_set, validate_set = train_test_split(dataset["train"],
 			test_size=VALIDATE_PART, random_state=seed)
 		training_set = training_set
-		target_training = train.create_target(training_set)
-		target_validate = train.create_target(validate_set)
+		target_training = linear.create_target(training_set)
+		target_validate = linear.create_target(validate_set)
 
 		ft_extractor = create_ft_ct_pd_au(w_ct=w_ct, w_pd=w_pd, w_au=w_au)
 		classifier = LogisticRegression(verbose=0)
@@ -170,8 +170,8 @@ def perform_ct_pd_au_exp(params):
 		t_validate = time.time() - t_in
 
 		# Compute scores
-		score_training = train.loss_fct(target_training, pred_training)
-		score_validate = train.loss_fct(target_validate, pred_validate)
+		score_training = linear.loss_fct(target_training, pred_training)
+		score_validate = linear.loss_fct(target_validate, pred_validate)
 
 		cv_res = (w_ct, w_pd, w_au, seed, score_training, score_validate, t_training, t_validate)
 

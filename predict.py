@@ -2,9 +2,9 @@
 
 import create_submission
 import data
-import features
+import preprocessing
 import utils
-import train
+import linear
 
 import os
 import numpy as np
@@ -32,10 +32,10 @@ def main():
 	train_set = dataset['train']
 	test_set = dataset['test']
 	print "Train and Test sets lengths: " + str(len(train_set)) + " " + str(len(test_set))
-	train_target = train.create_target(train_set)
+	train_target = linear.create_target(train_set)
 
 	# Model
-	ft_extractor = features.create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0001, w_ct=1, w_pd=1, w_au=1)
+	ft_extractor = preprocessing.create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0001, w_ct=1, w_pd=1, w_au=1)
 	classifier = LogisticRegression()
 	pipe = Pipeline([('ft_extractor', ft_extractor), ('classifier', classifier)])
 

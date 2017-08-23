@@ -2,8 +2,8 @@
 
 Usage: python create_submission <path_to_predictions.npy> <path_to_output.csv>
 """
+
 import csv
-import os
 import sys
 
 import utils
