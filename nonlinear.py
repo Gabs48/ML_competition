@@ -129,21 +129,44 @@ def test(predict=False):
 
 
 def grid_search():
-
     # 1. Import the features and target
     print "1. Import the features and target\n"
-    test, feature, target = target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
+    test, feature, target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
     training_ft, validate_ft, training_target, validate_target = \
         train_test_split(feature, target, test_size=preprocessing.VALIDATE_PART, random_state=preprocessing.SEED)
     print "Training features size: " + str(training_ft.shape) + \
-          " and validation features size: " + str(validate_ft.shape)
+              " and validation features size: " + str(validate_ft.shape)
     print "Training target size: " + str(len(training_target)) + \
-          " and validation target size: " + str(len(validate_target)) + "\n"
-
-    # 2. Create the Neural Network
-    print "2. Create the Neural Network\n"
+              " and validation target size: " + str(len(validate_target)) + "\n"
+    
+    # 2. Create the NN
+    print "2. Create the Neural Network"
     batch_size = BATCH_SIZE
-    clf = MLPClassifier(alpha=1e-3, hidden_layer_sizes=(50,), batch_size=batch_size, warm_start=True)
+    layers = (15,)
+    activation = "tanh"
+    alpha = 1e-7
+    learning_rate_init = 0.01
+    learning_rate = "adaptive"
+    problem = "classification"
+    if problem == "classification":
+        clf = MLPClassifier(alpha=alpha, activation=activation, learning_rate=learning_rate,
+                            batch_size=batch_size, learning_rate_init=learning_rate_init,
+                            hidden_layer_sizes=layers, warm_start=True)
+    else:
+        clf = MLPRegressor(alpha=alpha, activation=activation, learning_rate=learning_rate,
+                           batch_size=batch_size, learning_rate_init=learning_rate_init,
+                           hidden_layer_sizes=layers, warm_start=True)
+        clf.loss = "kaggle_compet_loss"
+    lab = preprocessing.Float2Labels()
+    classes = np.unique(training_target)
+    s = "\tProblem: " + str(problem)
+    s += "\n\tBatch size: " + str(batch_size)
+    s += "\n\tRegularization parameter: " + str(alpha)
+    s += "\n\tNetwork layers size: " + str(layers)
+    s += "\n\tNeuron activation function: " + str(activation)
+    s += "\n\tLearning method: " + str(learning_rate) + " with initialization to " + str(learning_rate_init)
+    s += "\n\tClasses: " + str(classes) + "\n"
+    print s
     parameters = {'alpha': np.logspace(-7, -2, num=6).tolist(),
                   'hidden_layer_sizes': [(i,) for i in [10, 15, 20, 50, 100]],
                   'batch_size': [1000]}
