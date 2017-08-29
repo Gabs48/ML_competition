@@ -221,7 +221,7 @@ def create_ft():
 
     # 2. Create the feature matrices
     print "2. Create features"
-    ft_pipe = Pipeline([('ft', create_ft_ct_pd_au()), ('norm', StandardScaler(with_mean=False))])
+    ft_pipe = Pipeline([('ft', create_ft_ct_pd_au()), ('norm', MaxAbsScaler())])
     train_ft = ft_pipe.fit_transform(train_set)
     test_ft = ft_pipe.transform(test_set)
     print "Train features matrix size: " + str(train_ft.shape) + " and target size: " + str(len(target))
@@ -229,14 +229,14 @@ def create_ft():
 
     # 3. Save features
     print "3. Save features"
-    save_ft(test_ft, train_ft, target, filename=DEFAULT_FT_LOCATION + "/ft_std_scaler.pkl")
+    save_ft(test_ft, train_ft, target, filename=DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
 
     r, c = train_ft.nonzero()
     feature_array = train_ft[r, c].flatten().tolist()
     plt.hist(feature_array, 50, alpha=0.75)
     plt.title('Features Histogram')
     plt.tight_layout()
-    plt.savefig(DEFAULT_FT_LOCATION + "/histogram_std_scaler.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_FT_LOCATION + "/histogram_max_scaler.png", format='png', dpi=300)
     plt.close()
 
 
