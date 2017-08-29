@@ -557,7 +557,7 @@ def main():
     """
 
     dataset = data.load_pickled_data()
-    train_set = dataset['train'][0:500]
+    train_set = dataset['train']
     utils.make_dir(DEFAULT_AN_LOCATION)
 
     plot_rating_distro(train_set)
