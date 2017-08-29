@@ -22,7 +22,6 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import text
 
-plt.style.use('fivethirtyeight')
 reload(sys)  
 sys.setdefaultencoding('utf8')
 
@@ -81,7 +80,7 @@ def plot_rating_distro(trainset):
     axes = plt.gca()
     axes.set_xlim([0, 6])
     axes.set_ylim([0, 1.2])
-    plt.savefig(DEFAULT_AN_LOCATION + "/rating_cumulative_distro.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/rating_cum.png", format='png', dpi=300)
     plt.close()
 
 
@@ -126,7 +125,7 @@ def plot_product_distro(trainset):
     plt.xlabel('Number of reviews per product')
     plt.ylabel('Average score per product')
     plt.tight_layout()
-    plt.savefig(DEFAULT_AN_LOCATION + "/prod_corr.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/product_corr.png", format='png', dpi=300)
     plt.close()
 
     # Plot distribution of reviews number by product
@@ -142,7 +141,7 @@ def plot_product_distro(trainset):
     formatter = FuncFormatter(utils.to_percent)
     axes.yaxis.set_major_formatter(formatter)
     plt.tight_layout()
-    plt.savefig(DEFAULT_AN_LOCATION + "/prod_rating.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/product_rating.png", format='png', dpi=300)
     plt.close()
 
     # Plot distribution of average rating by product
@@ -158,7 +157,7 @@ def plot_product_distro(trainset):
     formatter = FuncFormatter(utils.to_percent)
     axes.yaxis.set_major_formatter(formatter)
     plt.tight_layout()
-    plt.savefig(DEFAULT_AN_LOCATION + "/prod_number.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/product_num.png", format='png', dpi=300)
     plt.close()
 
     # Plot Cumulative graph
@@ -220,13 +219,13 @@ def plot_author_distro(trainset):
     plt.savefig(DEFAULT_AN_LOCATION + "/author_corr.png", format='png', dpi=300)
     plt.close()
 
-    # Plot distribution of reviews number by product
+    # Plot distribution of average rating by product
     d = 0.5
     left_of_first_bin = rating.min() - float(d)/2
     right_of_last_bin = rating.max() + float(d)/2
     weights = np.ones_like(rating)/float(number.size)
     plt.hist(rating, np.arange(left_of_first_bin, right_of_last_bin + d, d), weights=weights)
-    plt.xlabel('Number of reviews per author')
+    plt.xlabel('Average score per author')
     plt.ylabel('Distribution Percentage')
     axes = plt.gca()
     axes.set_xlim([0, 6])
@@ -236,26 +235,25 @@ def plot_author_distro(trainset):
     plt.savefig(DEFAULT_AN_LOCATION + "/author_rating.png", format='png', dpi=300)
     plt.close()
 
-    # Plot distribution of average rating by product
+    # Plot distribution of reviews number by product
     d = 1
     left_of_first_bin = number.min() - float(d)/2
     right_of_last_bin = number.max() + float(d)/2
     weights = np.ones_like(number)/float(number.size)
     plt.hist(number, np.arange(left_of_first_bin, right_of_last_bin + d, d), weights=weights)
-    plt.xlabel('Average score per author')
+    plt.xlabel('Number of reviews per author')
     plt.ylabel('Distribution Percentage')
     axes = plt.gca()
     axes.set_xlim([0, 50])
     formatter = FuncFormatter(utils.to_percent)
     axes.yaxis.set_major_formatter(formatter)
     plt.tight_layout()
-    plt.savefig(DEFAULT_AN_LOCATION + "/author_number.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/author_num.png", format='png', dpi=300)
     plt.close()
 
     # Plot cumulative distro
     rating = np.array(rating)
     rating, index = (list(t) for t in zip(*sorted(zip(rating, index))))
-
     plt.plot(rating, ".")
     plt.xlabel('Author ID')
     plt.ylabel('Average score')
@@ -320,7 +318,7 @@ def plot_date_distro(trainset):
     ax.yaxis.set_major_formatter(formatter)
     ax.fmt_xdata = DateFormatter('%Y-%m')
     plt.tight_layout()
-    plt.savefig(DEFAULT_AN_LOCATION + "/date_cum_distro.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/date_cum.png", format='png', dpi=300)
     plt.close()
 
     # Plot date distribution
@@ -434,7 +432,7 @@ def plot_content_len_distro(trainset):
     plt.tight_layout()
     axes = plt.gca()
     axes.set_xlim([0, 6])
-    plt.savefig(DEFAULT_AN_LOCATION + "/review_len_rating_corr.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/len_corr.png", format='png', dpi=300)
     plt.close()
 
     plt.plot(sorted(length), np.arange(0.0, 1.0, 1/float(len(length))))
@@ -445,7 +443,7 @@ def plot_content_len_distro(trainset):
     axes = plt.gca()
     axes.set_xlim([min(length)-10, max(length)+10])
     axes.set_ylim([0, 1.2])
-    plt.savefig(DEFAULT_AN_LOCATION + "/review_len_cumulative_distro.png", format='png', dpi=300)
+    plt.savefig(DEFAULT_AN_LOCATION + "/len_cum.png", format='png', dpi=300)
     plt.close()
 
 

@@ -37,9 +37,9 @@ def test(predict=False, ft_name=preprocessing.DEFAULT_FT_LOCATION + "/ft_max_sca
     # 2. Create the NN
     print "2. Create the Neural Network"
     batch_size = BATCH_SIZE
-    layers = (15,)
+    layers = (50,)
     activation = "tanh"
-    alpha = 1e-7
+    alpha = 1e-4
     learning_rate_init = 0.01
     learning_rate = "adaptive"
     problem = "classification"
@@ -144,16 +144,16 @@ def grid_search():
     training_ft, validate_ft, training_target, validate_target = \
         train_test_split(feature, target, test_size=preprocessing.VALIDATE_PART, random_state=preprocessing.SEED)
     print "Training features size: " + str(training_ft.shape) + \
-              " and validation features size: " + str(validate_ft.shape)
+          " and validation features size: " + str(validate_ft.shape)
     print "Training target size: " + str(len(training_target)) + \
-              " and validation target size: " + str(len(validate_target)) + "\n"
+          " and validation target size: " + str(len(validate_target)) + "\n"
 
     # 2. Create the NN
     print "2. Create the Neural Network"
     batch_size = BATCH_SIZE
-    layers = (15,)
+    layers = (50,)
     activation = "tanh"
-    alpha = 1e-7
+    alpha = 1e-4
     learning_rate_init = 0.01
     learning_rate = "adaptive"
     problem = "classification"

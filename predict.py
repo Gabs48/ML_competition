@@ -1,15 +1,12 @@
 """Sample script creating some baseline predictions."""
 
-import create_submission
 import data
 import preprocessing
 import linear
 import nonlinear
+import utils
 
 import sys
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
 
 
 def main(ft_filename=None):
@@ -28,7 +25,7 @@ def main(ft_filename=None):
 	print "3. Train the model"
 	nonlinear.pre
 
-	print 'Save predictions'
+	print "4. Save predictions'
 	predictions = pipe.predict(test_set)
 	save_prd(predictions)
 

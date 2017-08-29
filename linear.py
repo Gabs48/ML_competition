@@ -19,10 +19,6 @@ from sklearn.model_selection import *
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
-# Configuration
-plt.style.use('fivethirtyeight')
-
-# Global constants
 DEFAULT_TRAIN_LOCATION = 'Train'
 DEFAULT_PRED_LOCATION = "Predictions"
 N_PROCESS = 4

@@ -3,7 +3,6 @@
 import analysis
 import data
 import utils
-import linear
 
 import matplotlib
 matplotlib.use("Agg")

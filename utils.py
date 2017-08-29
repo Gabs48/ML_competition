@@ -108,6 +108,8 @@ def lp_filter(array, window):
 ## Matplotlib functions ##
 
 plt.style.use('fivethirtyeight')
+plt.rc('axes', facecolor='white')
+plt.rc('savefig', facecolor='white')
 
 
 def get_style_colors():
@@ -146,10 +148,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, filename='confusion_matr
         plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
-    #plt.tight_layout(pad=)
-    plot_margin = 1
-    x0, x1, y0, y1 = plt.axis()
-    plt.axis((x0, x1, y0 - plot_margin, y1 + plot_margin))
+    plt.gcf().subplots_adjust(bottom=0.15)
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.savefig(filename + ".png", format='png', dpi=300)
