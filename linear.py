@@ -48,8 +48,8 @@ def grid_search(clf='lr'):
         ft_extractor = preprocessing.create_ft_ct()
         ft_reductor = TruncatedSVD()
         classifier = LogisticRegression(verbose=0, penalty='l1')
-        parameters = {'clf__C': np.logspace(-5, 1, num=5).tolist(),
-                      'ft_red__n_components': np.logspace(3, 1, num=10).astype(int).tolist()}
+        parameters = {'clf__C': np.logspace(-5, 0, num=6).tolist(),
+                      'ft_red__n_components': np.logspace(1, 3.3, num=4).astype(int).tolist()}
         pipe = Pipeline([('ft', ft_extractor), ('ft_red', ft_reductor), ('clf', classifier)])
         filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_all_svd_" + utils.timestamp() + ".pkl"
     elif clf == "lr_mixed_svd":
@@ -167,14 +167,12 @@ def plot(filename):
         sv = np.array(results[4]).reshape(len(c), len(k))
         sv_err = np.array(results[5]).reshape(len(c), len(k))
 
-        print st, results[2]
-        print results[0], c
-        print st[0]
-
+        print sv.shape
         fig, ax1 = plt.subplots()
+        print c
 
         for ind, i in enumerate(k):
-            ax1.errorbar(c, sv[ind], sv_err[ind], label='k: ' + str(i))
+            ax1.errorbar(c, sv[:, ind], sv_err[:, ind], label='k: ' + str(i))
         ax1.set_ylabel('Score')
         ax1.tick_params('y', color=utils.get_style_colors()[0])
         plt.xscale('log')
