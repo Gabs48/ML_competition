@@ -15,7 +15,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction import text, DictVectorizer
 from sklearn.pipeline import FeatureUnion, Pipeline
-from sklearn.preprocessing import MaxAbsScaler, StandardScaler
+from sklearn.preprocessing import MaxAbsScaler, StandardScaler, MinMaxScaler
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -221,8 +221,8 @@ def create_ft(svd=True):
     # 2. Create the feature matrices
     print "2. Create features"
     if svd:
-        ft_pipe = Pipeline([('ft', create_ft_ct_pd_au()), ('norm', MaxAbsScaler()),
-                            ('red', TruncatedSVD(n_components=1000))])
+        ft_pipe = Pipeline([('ft', create_ft_ct_pd_au()), ('red', TruncatedSVD(n_components=1000)),
+                            ('norm', MinMaxScaler())])
     else:
         ft_pipe = Pipeline([('ft', create_ft_ct_pd_au()), ('norm', MaxAbsScaler())])
 
@@ -235,19 +235,24 @@ def create_ft(svd=True):
     print "3. Save features"
     if svd:
         save_ft(test_ft, train_ft, target, filename=DEFAULT_FT_LOCATION + "/ft_svd.pkl")
+        r, c = train_ft.nonzero()
+        feature_array = train_ft[r, c].flatten().tolist()
+        plt.hist(feature_array, 10, alpha=0.75)
+        plt.title('Features Histogram')
+        plt.tight_layout()
+        plt.savefig(DEFAULT_FT_LOCATION + "/histogram_svd.png", format='png', dpi=300)
+        plt.close()
     else:
         save_ft(test_ft, train_ft, target, filename=DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
-
-    r, c = train_ft.nonzero()
-    feature_array = train_ft[r, c].flatten().tolist()
-    plt.hist(feature_array, 50, alpha=0.75)
-    plt.title('Features Histogram')
-    plt.tight_layout()
-    if svd:
-        plt.savefig(DEFAULT_FT_LOCATION + "/histogram_svd.png", format='png', dpi=300)
-    else:
+        r, c = train_ft.nonzero()
+        feature_array = train_ft[r, c].flatten().tolist()
+        plt.hist(feature_array, 50, alpha=0.75)
+        plt.title('Features Histogram')
+        plt.tight_layout()
         plt.savefig(DEFAULT_FT_LOCATION + "/histogram_max_scaler.png", format='png', dpi=300)
-    plt.close()
+        plt.close()
+
+
 
 
 if __name__ == '__main__':
