@@ -508,12 +508,12 @@ def plot_content_tfidf(trainset):
             st = "\n --- Highest " + str(n) + "-grams * rating products ---\n\n"
             st += "|  TFIDF * Rating\t|  NGRAM\n"
             st += "----------------------------\n"
-            for i in range(int(max_print / 2)):
+            for i in range(int(max_print)):
                 st += "| " + utils.n2str(corr[i]) + "\t\t\t| " + str(names[i]) + "\n"
             st += "\n --- Lowest " + str(n) + "-grams * rating products ---\n\n"
             st += "|  TFIDF * Rating\t|  NGRAM\n"
             st += "----------------------------\n"
-            for i in range(int(max_print / 2)):
+            for i in range(int(max_print)):
                 st += "| " + utils.n2str(corr[-i-1]) + "\t\t\t| " + str(names[-i-1]) + "\n"
             corr_file.write(st)
             corr_file.close()

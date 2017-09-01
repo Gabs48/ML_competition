@@ -18,9 +18,6 @@ from sklearn.feature_selection import SelectKBest, chi2
 import sys
 import time
 
-# Configuration
-plt.style.use('fivethirtyeight')
-
 # Global constants
 DEFAULT_CV_LOCATION = 'FeatureSelection'
 N_PROCESS = 4
@@ -491,7 +488,12 @@ def plot_reduction(filename):
 	fig, ax1 = plt.subplots()
 	ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
 	ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
-	ax1.set_xlabel('Number of eigenvalues kept in ' + str(method))
+	if method == "svd":
+		ax1.set_xlabel('Number of eigenvalues kept by ' + str(method) + ' method')
+	elif method == "kbest":
+		ax1.set_xlabel('Number of best features selected by ' + str(method))
+	else:
+		ax1.set_xlabel('Number of eigenvalues kept in ' + str(method))
 	ax1.set_ylabel('Score')
 	ax1.tick_params('y', color=utils.get_style_colors()[0])
 

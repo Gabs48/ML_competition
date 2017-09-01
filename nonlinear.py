@@ -92,9 +92,11 @@ def test(predict=False, ft_name=preprocessing.DEFAULT_FT_LOCATION + "/ft_max_sca
         # 4. Plot
         print "\n4. Plot and save the training and validation loss functions\n"
         fig, ax1 = plt.subplots()
-        ax1.plot(training_score, color=utils.get_style_colors()[0])
-        ax1.plot(validate_score, color=utils.get_style_colors()[1])
+        ax1.plot(training_score, color=utils.get_style_colors()[0], label="Training")
+        ax1.plot(validate_score, color=utils.get_style_colors()[1], label="Validation")
+        plt.legend()
         ax1.set_ylabel('Score')
+        ax1.set_xlabel('Batch Number')
         fig.tight_layout()
         filename = linear.DEFAULT_TRAIN_LOCATION + "/MLP/cv_mlp_" + str(utils.timestamp())
         utils.dump_pickle((training_score, validate_score), filename + ".pkl")
@@ -104,7 +106,7 @@ def test(predict=False, ft_name=preprocessing.DEFAULT_FT_LOCATION + "/ft_max_sca
         plt.savefig(filename + ".png", format='png', dpi=300)
         plt.close()
         cnf_matrix = confusion_matrix(validate_pred, validate_target)
-        utils.plot_confusion_matrix(cnf_matrix, classes=classes, normalize=True, filename=filename + "conf_mat.png")
+        utils.plot_confusion_matrix(cnf_matrix, classes=classes, normalize=True, filename=filename + "_conf_mat")
 
     if predict:
         # 3. Train on full dataset

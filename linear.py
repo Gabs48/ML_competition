@@ -167,10 +167,7 @@ def plot(filename):
         sv = np.array(results[4]).reshape(len(c), len(k))
         sv_err = np.array(results[5]).reshape(len(c), len(k))
 
-        print sv.shape
         fig, ax1 = plt.subplots()
-        print c
-
         for ind, i in enumerate(k):
             ax1.errorbar(c, sv[:, ind], sv_err[:, ind], label='k: ' + str(i))
         ax1.set_ylabel('Score')
@@ -194,7 +191,7 @@ def plot(filename):
         fig, ax1 = plt.subplots()
         ax1.errorbar(x, st, st_err, color=utils.get_style_colors()[0])
         ax1.errorbar(x, sv, sv_err, color=utils.get_style_colors()[1])
-        if method == "lr":
+        if method == "lr" or method == "lr_all":
             ax1.set_xlabel('Evolution of regularization parameter C')
         ax1.set_ylabel('Score')
         ax1.tick_params('y', color=utils.get_style_colors()[0])
