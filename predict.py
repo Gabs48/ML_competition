@@ -1,9 +1,18 @@
-"""Sample script creating some baseline predictions."""
+"""Simple prediction script"""
 
-import data
-import preprocessing
-import linear
+__author__ = "Gabriel Urbain"
+__copyright__ = "Copyright 2017, Gabriel Urbain"
+
+__license__ = "MIT"
+__version__ = "0.2"
+__maintainer__ = "Gabriel Urbain"
+__email__ = "gabriel.urbain@ugent.be"
+__status__ = "Research"
+__date__ = "September 1st, 2017"
+
+
 import nonlinear
+import preprocessing
 import utils
 
 import sys
@@ -11,24 +20,14 @@ import sys
 
 def main(ft_filename=None):
 
-	print "1. Load the data"
-	dataset = data.load_pickled_data()
-	train_set = dataset['train']
-	train_target = linear.create_target(train_set)
-	test_set = dataset['test']
-	print "Train and Test sets lengths: " + str(len(train_set)) + " " + str(len(test_set)) + "\n"
-
-	print "2. Compute the features\n"
+	print "1. Load or create the features\n"
 	if ft_filename is None:
-		preprocessing.create_ft()
+		ft_filename = preprocessing.DEFAULT_FT_LOCATION + "/ft" + utils.timestamp() + ".pkl"
+		test_ft, train_ft, target = preprocessing.create_ft()
+		preprocessing.save_ft(test_ft, train_ft, target, filename=ft_filename)
 
-	print "3. Train the model"
-	nonlinear.pre
-
-	print "4. Save predictions'
-	predictions = pipe.predict(test_set)
-	save_prd(predictions)
-
+	print "2. Train the model and save predictions"
+	nonlinear.test(predict=True, ft_name=ft_filename)
 
 if __name__ == '__main__':
 

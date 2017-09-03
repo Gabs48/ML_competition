@@ -1,4 +1,14 @@
-"""Script loading the data and analyse some of its properties."""
+"""Exploratory Data Analysis"""
+
+__author__ = "Gabriel Urbain"
+__copyright__ = "Copyright 2017, Gabriel Urbain"
+
+__license__ = "MIT"
+__version__ = "0.2"
+__maintainer__ = "Gabriel Urbain"
+__email__ = "gabriel.urbain@ugent.be"
+__status__ = "Research"
+__date__ = "September 1st, 2017"
 
 import data
 import utils

@@ -1,4 +1,15 @@
-""" Script that transform the content of train in sklearn boolean features """
+"""SK-learn grid-search and test scripts for Logistic Regression models"""
+
+__author__ = "Gabriel Urbain"
+__copyright__ = "Copyright 2017, Gabriel Urbain"
+
+__license__ = "MIT"
+__version__ = "0.2"
+__maintainer__ = "Gabriel Urbain"
+__email__ = "gabriel.urbain@ugent.be"
+__status__ = "Research"
+__date__ = "September 1st, 2017"
+
 
 import preprocessing
 import data
@@ -56,7 +67,8 @@ def grid_search(clf='lr'):
         ft_extractor = preprocessing.create_ft_ctsvd_pd_au()
         classifier = LogisticRegression(verbose=0, penalty='l1')
         parameters = {'clf__C': np.logspace(-2, 2, num=5).tolist(),
-                      'ft__ft_extractor__content__reductor__n_components': np.logspace(3.7, 1, num=5).astype(int).tolist()}
+                      'ft__ft_extractor__content__reductor__n_components':
+                          np.logspace(3.7, 1, num=5).astype(int).tolist()}
         pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
         filename = DEFAULT_TRAIN_LOCATION + "/cv_lr_mixed_svd_" + utils.timestamp() + ".pkl"
     elif clf == "rf_all":
@@ -75,7 +87,6 @@ def grid_search(clf='lr'):
         pipe = Pipeline([('ft', ft_extractor), ('clf', classifier)])
 
     # Create the cross-validation search method
-    # print pipe.get_params().keys()
     loss = make_scorer(preprocessing.loss_fct, greater_is_better=False)
     gs = GridSearchCV(pipe, parameters, n_jobs=N_PROCESS, verbose=2, scoring=loss)
 
@@ -162,8 +173,6 @@ def plot(filename):
     if method == "lr_all_svd" or method == "lr_mixed_svd" or method == "rf_all":
         c = np.unique(np.array(results[0]))
         k = np.unique(np.array(results[1]))
-        st = np.array(results[2]).reshape(len(c), len(k))
-        st_err = np.array(results[3]).reshape(len(c), len(k))
         sv = np.array(results[4]).reshape(len(c), len(k))
         sv_err = np.array(results[5]).reshape(len(c), len(k))
 
@@ -171,6 +180,7 @@ def plot(filename):
         for ind, i in enumerate(k):
             ax1.errorbar(c, sv[:, ind], sv_err[:, ind], label='k: ' + str(i))
         ax1.set_ylabel('Score')
+        ax1.set_xlabel('Regularization parameter C')
         ax1.tick_params('y', color=utils.get_style_colors()[0])
         plt.xscale('log')
         fig.tight_layout()

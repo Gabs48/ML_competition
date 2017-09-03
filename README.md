@@ -1,72 +1,84 @@
 # Machine Learning Kaggle Competition
-Code of the Kaggle competition for the Machine Learning course
+Code of a Kaggle competition for the Machine Learning class:
 
-## Libraries
-Install libraries with pip:
-~~~bash
-pip install nltk
-~~~
-Then in a python terminal:
 
-~~~python
-import nltk
-nltk.download()
-~~~
+## Python requirements:
+- SciPy
+- SciKit Learn
+- NLTK
 
-## Principle
+## Main script usage
 
-Used techniques are:
-- N-grams
-- vectorized dictionnary
-- Logistical regression
-Used libraries are:
-- sklearn
-
-## Usage
-
-- Get the code:
+### Create data File
 
 ~~~bash
-git clone http://github.com/Gabs48/ML_competition
+python create_data_pickle.py
 ~~~
 
-- Place the Data folder in the repository
-
-- Create a pickle file from data:
+### Exploratory data analysis
 
 ~~~bash
-python2 create_data_pickle.py
+python analysis.py
 ~~~
 
-- Create a vectorized dictionnary (sklearn) of features (lines: reviews; columns: features). This step produces a feature file and a model file in the folder *Features*:
+### Parameters search for feature extraction
+
+For grid-search:
+~~~bash
+python feature_selection.py ct|ct_pd_au|reduce
+~~~
+To plot the grid-search results:
+~~~bash
+python feature_selection.py plot_ct|plot_ct_pd_au|plot_reduce \
+    <grid_search_results_filename.pkl>
+~~~
+
+### Creation of a features file
 
 ~~~bash
-python2 features.py
+python preprocessing.py ft
 ~~~
 
-- Create a regression model using the features and target review ratings. This step produces a regression model file and a score file for the training set in the folder *Models*:
+### Parameters search for linear models
 
+For grid-search:
 ~~~bash
-python2 train.py <path_to_feature_file.pkl>
+python linear.py gs lr|lr_all|lr_all_svd|lr_mixed_svd|rf_all
 ~~~
-
-- Estimate the score of the two previous tests on a validation set. This step produces a validation score file for the validation set in the folder *Models*:
-
+To plot the grid-search results:
 ~~~bash
-python2 validate.py <path_to_feature_model.pkl> <path_to_regression_model.pkl>
+python linear.py plot <grid_search_results_filename.pkl>
 ~~~
-
-- Predict review rating for the test set. This step produces a prediction numpy matrix for the test set in the folder *Predictions*:
-
+For a single test (edit file accordingly):
 ~~~bash
-python2 predict.py <path_to_feature_model.pkl> <path_to_regression_model.pkl>
+python linear.py test
 ~~~
 
-- Transform prediction matrix in CSV file for Kaggle competition:
+### Parameters search for non-linear models
 
+For grid-search:
 ~~~bash
-python2 create_submission.py <path_to_predicted_results.npy> [<path_to_CSV_file.csv>]
+python linear.py gs
+~~~
+To plot the grid-search results:
+~~~bash
+python linear.py plot <grid_search_results_filename.pkl>
+~~~
+For a single test (edit file accordingly):
+~~~bash
+python linear.py test
+~~~
+For an test with ensemble voting between different classifiers:
+~~~bash
+python linear.py vote
 ~~~
 
-## Documentation
-A full technical explanation can be found in *Doc/report.pdf*. This document is however not updated for every commit of code.
+### Prediction
+
+To create a prediction, edit the file to select the desired model and run:
+~~~bash
+python predict.py [features_filename.pkl]
+~~~
+
+All other documentation can be found in the scientific project report or in the
+code directly

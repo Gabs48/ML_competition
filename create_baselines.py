@@ -1,6 +1,6 @@
 """Sample script creating some baseline predictions."""
-import os
 
+import os
 import numpy as np
 
 import data

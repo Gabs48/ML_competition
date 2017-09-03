@@ -1,4 +1,14 @@
-"""Script loading the pickle files and creating a set of features to be processed."""
+"""All data and feature processing functions and routines"""
+
+__author__ = "Gabriel Urbain"
+__copyright__ = "Copyright 2017, Gabriel Urbain"
+
+__license__ = "MIT"
+__version__ = "0.2"
+__maintainer__ = "Gabriel Urbain"
+__email__ = "gabriel.urbain@ugent.be"
+__status__ = "Research"
+__date__ = "September 1st, 2017"
 
 import analysis
 import data
@@ -15,7 +25,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction import text, DictVectorizer
 from sklearn.pipeline import FeatureUnion, Pipeline
-from sklearn.preprocessing import MaxAbsScaler, StandardScaler, MinMaxScaler
+from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -113,9 +123,6 @@ def create_target(dataset):
 
 
 def create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0003, w_ct=1, w_pd=1, w_au=1):
-    """
-    Create a feature extraction pipe given different hyper parameters and return it
-    """
 
     # Declare estimators
     stop_words = text.ENGLISH_STOP_WORDS.union(["s", "t", "2", "m", "ve"])
@@ -129,24 +136,21 @@ def create_ft_ct_pd_au(ngram=3, max_df=0.3, min_df=0.0003, w_ct=1, w_pd=1, w_au=
                                 ('selector_ct', ItemSelector(key='content')),
                                 ('content_ft', content_fct),
                                 ])),
-                        ('product', Pipeline([
+          ('product', Pipeline([
                                 ('selector_pd', ItemSelector(key='product', typ="dict")),
                                 ('product_ft', product_fct),
                                 ])),
-                        ('author', Pipeline([
+          ('author', Pipeline([
                                 ('selector_au', ItemSelector(key='author', typ="dict")),
                                 ('author_ft', author_fct),
                                 ]))
-                        ]
+          ]
     tw = {'content': w_ct, 'product': w_pd, 'author': w_au}
 
     return Pipeline([('ft_extractor', FeatureUnion(transformer_list=tl, transformer_weights=tw))])
 
 
 def create_ft_ctsvd_pd_au(ngram=3, k=10000, max_df=0.3, min_df=0.0003, w_ct=1, w_pd=1, w_au=1):
-    """
-    Create a feature extraction pipe given different hyper parameters and return it
-    """
 
     # Declare estimators
     stop_words = text.ENGLISH_STOP_WORDS.union(["s", "t", "2", "m", "ve"])
@@ -161,24 +165,21 @@ def create_ft_ctsvd_pd_au(ngram=3, k=10000, max_df=0.3, min_df=0.0003, w_ct=1, w
                                 ('ft', content_fct),
                                 ('reductor', TruncatedSVD(n_components=int(k))),
                                 ])),
-                        ('product', Pipeline([
+          ('product', Pipeline([
                                 ('selector_pd', ItemSelector(key='product', typ="dict")),
                                 ('ft', product_fct),
                                 ])),
-                        ('author', Pipeline([
+          ('author', Pipeline([
                                 ('selector_au', ItemSelector(key='author', typ="dict")),
                                 ('ft', author_fct),
                                 ]))
-                        ]
+          ]
     tw = {'content': w_ct, 'product': w_pd, 'author': w_au}
 
     return Pipeline([('ft_extractor', FeatureUnion(transformer_list=tl, transformer_weights=tw))])
 
 
 def create_ft_ct(ngram=3, max_df=0.3, min_df=0.0003):
-    """
-    Create a feature extraction pipe using the review content only and return it
-    """
 
     stop_words = text.ENGLISH_STOP_WORDS.union(["s", "t", "2", "m", "ve"])
     content_fct = text.TfidfVectorizer(tokenizer=analysis.get_text_ngram, ngram_range=(1, ngram),
@@ -188,9 +189,6 @@ def create_ft_ct(ngram=3, max_df=0.3, min_df=0.0003):
 
 
 def save_ft(test_ft, train_ft, target, filename=None):
-    """
-    Save the features
-    """
 
     ts = utils.timestamp()
     if filename is None:
@@ -201,9 +199,6 @@ def save_ft(test_ft, train_ft, target, filename=None):
 
 
 def load_ft(filename):
-    """
-    Load the features
-    """
 
     (test_ft, train_ft, target) = utils.load_pickle(filename)
 
@@ -251,8 +246,6 @@ def create_ft(svd=True):
         plt.tight_layout()
         plt.savefig(DEFAULT_FT_LOCATION + "/histogram_max_scaler.png", format='png', dpi=300)
         plt.close()
-
-
 
 
 if __name__ == '__main__':

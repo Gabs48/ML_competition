@@ -20,7 +20,6 @@ import utils
 
 ## Default data folder names ##
 
-
 DEFAULT_DATA_LOCATION = 'Data'
 DEFAULT_TRAIN_DATA_LOCATION = os.path.join(DEFAULT_DATA_LOCATION, 'Train')
 DEFAULT_TEST_DATA_LOCATION = os.path.join(DEFAULT_DATA_LOCATION, 'Test')

@@ -1,3 +1,15 @@
+"""SK-learn grid-search and test scripts for Multi Layer Perceptron models"""
+
+__author__ = "Gabriel Urbain"
+__copyright__ = "Copyright 2017, Gabriel Urbain"
+
+__license__ = "MIT"
+__version__ = "0.2"
+__maintainer__ = "Gabriel Urbain"
+__email__ = "gabriel.urbain@ugent.be"
+__status__ = "Research"
+__date__ = "September 1st, 2017"
+
 
 import create_submission
 import preprocessing
@@ -142,9 +154,11 @@ def test(predict=False, ft_name=preprocessing.DEFAULT_FT_LOCATION + "/ft_max_sca
 def grid_search():
     # 1. Import the features and target
     print "1. Import the features and target\n"
-    test, feature, target = preprocessing.load_ft(preprocessing.DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
+    test_features, feature, target = preprocessing.load_ft(
+        preprocessing.DEFAULT_FT_LOCATION + "/ft_max_scaler.pkl")
     training_ft, validate_ft, training_target, validate_target = \
-        train_test_split(feature, target, test_size=preprocessing.VALIDATE_PART, random_state=preprocessing.SEED)
+        train_test_split(feature, target, test_size=preprocessing.VALIDATE_PART,
+                         random_state=preprocessing.SEED)
     print "Training features size: " + str(training_ft.shape) + \
           " and validation features size: " + str(validate_ft.shape)
     print "Training target size: " + str(len(training_target)) + \
@@ -168,7 +182,7 @@ def grid_search():
                            batch_size=batch_size, learning_rate_init=learning_rate_init,
                            hidden_layer_sizes=layers, warm_start=True)
         clf.loss = "kaggle_compet_loss"
-    lab = preprocessing.Float2Labels()
+
     classes = np.unique(training_target)
     s = "\tProblem: " + str(problem)
     s += "\n\tBatch size: " + str(batch_size)
