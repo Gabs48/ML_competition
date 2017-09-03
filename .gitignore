@@ -13,5 +13,6 @@ Train/*
 # Ignore python compiled files
 *.pyc
 
-# Unpublished report
-report.md
+# Own files
+old/*
+Report/*
